@@ -11,7 +11,7 @@ class Hand:
         self.h.sort()
 
     def hand(self):
-        return self.hand
+        return self.h
 
     def is_winning_hand(self):
         copy = self.h.copy()
