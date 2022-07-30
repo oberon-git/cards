@@ -70,3 +70,6 @@ class Hand:
         for c in self.h:
             c.sort_by_value()
 
+    def sort(self):
+        self.h.sort()
+
