@@ -10,7 +10,10 @@ class Player:
         return self.h.hand()
 
     def play_card(self, c):
-        self.h.add_card(c)
+        self.h.remove_card(c)
 
     def draw_card(self, c):
-        self.h.remove_card(c)
+        self.h.add_card(c)
+
+    def won(self):
+        return self.h.is_winning_hand()

@@ -1,14 +1,14 @@
 class Hand:
     def __init__(self, hand):
         self.h = hand
+        self.sort()
 
     def remove_card(self, c):
         self.h.remove(c)
-        self.h.sort()
 
     def add_card(self, c):
         self.h.append(c)
-        self.h.sort()
+        self.sort()
 
     def hand(self):
         return self.h
@@ -48,7 +48,7 @@ class Hand:
 
         if len(runs) == 1:
             return True
-        for i in len(runs)-1:
+        for i in range(len(runs)-1):
             for j in range(i+1, len(runs)):
                 if len(runs[i]) + len(runs[j]) == 7:
                     return True

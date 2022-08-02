@@ -144,7 +144,7 @@ class Rummy:
         else:
             text = font.render("You Lost!", True, (255, 255, 255))
         rect = text.get_rect()
-        rect.center = (win.get_width() // 2, win.get_height() // 2 - 30)
+        rect.center = (win.get_width() // 2, win.get_height() // 2 - 100)
         win.blit(text, rect)
 
     def draw_card_from_deck(self, p):
@@ -159,8 +159,8 @@ class Rummy:
 
     def discard_card(self, p, c):
         self.players[p].play_card(c)
-        # if won(self.players[p].hand()):
-        #     self.winner = p
+        if self.players[p].won():
+            self.winner = p
         self.bottom = self.top
         self.top = c
         self.step = 0

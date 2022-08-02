@@ -10,8 +10,9 @@ def print_hand(hand):
 
 
 def main():
-    hand = Hand([Card(7, 4), Card(7, 2), Card(3, 1), Card(4, 1), Card(5, 1), Card(6, 1), Card(2, 1)])
+    hand = Hand([Card(6, 1), Card(6, 2), Card(7, 2), Card(8, 2), Card(7, 4), Card(10, 2), Card(10, 3)])
     print(hand.is_winning_hand())
+    print(hand.h[0].sort)
 
 
 main()
