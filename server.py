@@ -60,9 +60,11 @@ def client(g, c, o):
                     connections[o][0].sendall(pickle.dumps(packet))
                 else:
                     if data.turn != games[g].game.turn:
+                        map_to_game(data, games[g])
                         packet = Packet(games[g])
                         connections[o][0].sendall(pickle.dumps(packet))
-                    connections[o][0].sendall(pickle.dumps(None))
+                    else:
+                        connections[o][0].sendall(pickle.dumps(None))
             else:
                 connections[p][0].sendall(pickle.dumps(Packet(games[g])))
             if not games[g].connected() and o < len(connections) and connections[c][1] and connections[o][1]:
