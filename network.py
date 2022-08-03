@@ -55,7 +55,7 @@ class Network:
         try:
             if data is None:
                 self.client.send(pickle.dumps(data))
-                return pickle.loads(self.client.recv(2048*64))
+                return pickle.loads(self.client.recv(2048*512))
             packet = Packet(data)
             self.client.send(pickle.dumps(packet))
             packet = pickle.loads(self.client.recv(1024))
