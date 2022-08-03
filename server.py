@@ -21,7 +21,7 @@ games = {}
 
 
 def client(g, c, o):
-    global count, games
+    global connections, games
     p = c % 2
     connections[c][0].send(str.encode(str(p)))
     data = connections[c][0].recv(512).decode()
@@ -59,6 +59,9 @@ def client(g, c, o):
                     packet = Packet(games[g])
                     connections[o][0].sendall(pickle.dumps(packet))
                 else:
+                    if data.turn != games[g].game.turn:
+                        packet = Packet(games[g])
+                        connections[o][0].sendall(pickle.dumps(packet))
                     connections[o][0].sendall(pickle.dumps(None))
             else:
                 connections[p][0].sendall(pickle.dumps(Packet(games[g])))

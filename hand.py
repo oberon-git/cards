@@ -46,11 +46,15 @@ class Hand:
             c += 1
         self.h = copy
 
-        if len(runs) == 1:
-            return True
         for i in range(len(runs)-1):
+            if len(runs[i] == 7):
+                return True
             for j in range(i+1, len(runs)):
                 if len(runs[i]) + len(runs[j]) == 7:
+                    return True
+        for i in range(len(pairs)-1):
+            for j in range(i+1, len(pairs)):
+                if len(pairs[i]) + len(pairs[j]) == 7:
                     return True
         for pair in pairs:
             for run in runs:

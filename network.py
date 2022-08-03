@@ -51,19 +51,19 @@ class Network:
         except socket.error as e:
             print(e)
 
-    def send(self, game):
+    def send(self, data):
         try:
-            if game is None:
-                self.client.send(pickle.dumps(game))
+            if data is None:
+                self.client.send(pickle.dumps(data))
                 return pickle.loads(self.client.recv(2048*4))
-            packet = Packet(game)
+            packet = Packet(data)
             self.client.send(pickle.dumps(packet))
             packet = pickle.loads(self.client.recv(1024))
             if packet == 0:
                 print("Connection Lost")
                 return None
             elif type(packet) == Packet:
-                map_to_game(packet, game)
-            return game
+                map_to_game(packet, data)
+            return data
         except socket.error as e:
             print(e)

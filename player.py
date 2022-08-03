@@ -4,7 +4,6 @@ from hand import Hand
 class Player:
     def __init__(self, hand):
         self.h = Hand(hand)
-        self.h.sort()
 
     def hand(self):
         return self.h.hand()

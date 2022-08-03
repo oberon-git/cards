@@ -94,7 +94,6 @@ class Rummy:
     def draw(self, win, resources, p, mouse_pos, clicked):
         resources.draw_background(win, 7)
         if self.winner > -1:
-            print(self.winner)
             self.draw_winner(win, p)
         mult = Data.CARD_WIDTH + 20
         offset = win.get_width() // 2 - mult * self.n // 2
