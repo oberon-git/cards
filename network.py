@@ -27,43 +27,46 @@ class Network:
             if not os.path.exists("assets/backgrounds"):
                 os.mkdir("assets/backgrounds")
             for _ in range(n):
-                filename = self.client.recv(512).decode()
+                filename = self.client.recv(128).decode()
                 card_list.append(filename)
-                self.client.send(str.encode("send"))
-                # print("Receiving", filename)
-                with open(filename, 'wb') as file:
-                    buff = self.client.recv(2048)
-                    file.write(buff)
-                with open(filename, 'ab') as file:
-                    while True:
-                        buff = self.client.recv(2048)
-                        if buff in Data.END or buff == b'' or not buff:
-                            break
-                        if buff.endswith(Data.END):
-                            buff = buff[:buff.find(Data.END)]
-                            file.write(buff)
-                            break
-                        file.write(buff)
-                self.client.send(str.encode("received"))
-                # print(filename, "Received")
+                if not os.path.exists(filename):
+                    self.client.send(str.encode("send"))
+                    # print("Receiving", filename)
+                    with open(filename, 'wb') as file:
+                        data = self.recv()
+                        file.write(data)
+                    self.client.send(str.encode("received"))
+                    # print(filename, "Received")
+                else:
+                    self.client.send(str.encode("skip"))
             print("Images Received")
             return p, card_list
         except socket.error as e:
             print(e)
 
+    def recv(self):
+        data = b''
+        while True:
+            buff = self.client.recv(512)
+            if not buff:
+                return data
+            data += buff
+            if data.endswith(Data.END):
+                return data[:data.find(Data.END)]
+
     def send(self, data):
         try:
             if data is None:
                 self.client.send(pickle.dumps(data))
-                return pickle.loads(self.client.recv(1024))
-            packet = Packet(data)
-            self.client.send(pickle.dumps(packet))
-            packet = pickle.loads(self.client.recv(1024))
-            if packet == 0:
+                return pickle.loads(self.client.recv(2048*4))
+            data_packet = Packet(data)
+            self.client.send(pickle.dumps(data_packet))
+            server_packet = pickle.loads(self.client.recv(1024))
+            if server_packet == 0:
                 print("Connection Lost")
                 return None
-            elif type(packet) == Packet:
-                map_to_game(packet, data)
+            elif type(server_packet) == Packet:
+                map_to_game(server_packet, data)
             return data
         except socket.error as e:
             print(e)

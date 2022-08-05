@@ -96,7 +96,7 @@ class Rummy:
         if self.winner > -1:
             self.draw_winner(win, p)
         mult = Data.CARD_WIDTH + 20
-        offset = win.get_width() // 2 - mult * self.n // 2
+        offset = win.get_width() // 2 - mult * (self.n if self.step == 1 else self.n + 1) // 2
         hand = self.players[p].hand()
         to_discard = (False, -1, -1)
         for i in range(len(hand)):

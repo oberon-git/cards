@@ -17,3 +17,4 @@ class Packet:
         self.bottom = g.game.bottom
         self.curr = g.game.deck.curr
         self.winner = g.game.winner
+

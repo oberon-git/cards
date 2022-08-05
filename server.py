@@ -24,19 +24,19 @@ def client(g, c, o):
     global connections, games
     p = c % 2
     connections[c][0].send(str.encode(str(p)))
-    data = connections[c][0].recv(512).decode()
+    data = connections[c][0].recv(128).decode()
     if data == "received":
         connections[c][0].send(str.encode(str(len(file_list))))
-        data = connections[c][0].recv(512).decode()
+        data = connections[c][0].recv(128).decode()
         if data == "received":
             for filename in file_list:
                 # print("Sending", filename)
                 connections[c][0].send(str.encode(filename))
-                data = connections[c][0].recv(512).decode()
+                data = connections[c][0].recv(128).decode()
                 if data == "send":
                     image = open(filename, 'rb')
                     while True:
-                        buff = image.readline(2048)
+                        buff = image.readline(512)
                         if not buff:
                             connections[c][0].sendall(Data.END)
                             break
@@ -60,9 +60,9 @@ def client(g, c, o):
                     connections[o][0].sendall(pickle.dumps(packet))
                 else:
                     if data.turn != games[g].game.turn:
-                        map_to_game(data, games[g])
                         packet = Packet(games[g])
-                        connections[o][0].sendall(pickle.dumps(packet))
+                        connections[p][0].sendall(pickle.dumps(packet))
+                        print("Here")
                     else:
                         connections[o][0].sendall(pickle.dumps(None))
             else:
@@ -94,17 +94,12 @@ def main():
         conn, addr = s.accept()
         connections.append([conn, False])
         game_id = count // 2
+        print(game_id)
         if count % 2 == 0:
             games[game_id] = Game('rummy')
             start_new_thread(client, (game_id, len(connections)-1, len(connections)))
         else:
-            if game_id not in games:
-                count -= 1
-                game_id = count // 2
-                games[game_id] = Game("rummy")
-                start_new_thread(client, (game_id, len(connections)-1, len(connections)))
-            else:
-                start_new_thread(client, (game_id, len(connections)-1, len(connections)-2))
+            start_new_thread(client, (game_id, len(connections)-1, len(connections)-2))
         count += 1
 
 
