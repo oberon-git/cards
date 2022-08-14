@@ -1,4 +1,3 @@
-import pygame
 import socket
 import os
 from shared import *
@@ -94,7 +93,6 @@ def main():
     n = Network()
     p, card_list = n.connect()
     game = n.send(None)
-    print("Game Received")
     resources = Resources(card_list)
 
     pygame.init()

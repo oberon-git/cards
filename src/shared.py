@@ -23,9 +23,7 @@ def send_initial_game(conn, game):
 
 def recv_initial_game(conn):
     try:
-        print("Here")
         deck = pickle.loads(conn.recv(2048*4))
-        print("Deck Received")
         players = pickle.loads(conn.recv(2048*4))
         return Game(deck, players)
     except Exception as e:
