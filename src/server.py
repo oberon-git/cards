@@ -1,6 +1,5 @@
 import socket
 from _thread import start_new_thread
-from _collections import deque
 from shared import *
 
 
@@ -10,8 +9,8 @@ for card in Data.CARD_TYPES.values():
         file_list.append("assets/cards/" + card + "_of_" + suit + ".png")
 for back in Data.CARD_BACKS:
     file_list.append("assets/cards/" + back + ".png")
-for x in range(1, 8):
-    file_list.append("assets/backgrounds/0" + str(x) + ".png")
+for i in range(1, 8):
+    file_list.append("assets/backgrounds/0" + str(i) + ".png")
 
 
 class Connection:
@@ -53,7 +52,6 @@ def client(conns, game):
                     if data != "received":
                         break
     print("Images Sent")
-    conns[x].ready = True
     connected = False
     while True:
         try:
@@ -68,6 +66,7 @@ def client(conns, game):
                 data = conns[x].conn.recv(512)
                 if data == Data.END:
                     send_initial_game(conns[x].conn, game)
+                    conns[x].ready = True
                 else:
                     packet = Packet(game)
                     if len(conns) == 2 and conns[x].ready and conns[y].ready:

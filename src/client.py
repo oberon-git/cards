@@ -72,21 +72,17 @@ class Network:
             map_to_game(packet, game)
             return game
         except Exception as e:
-            e.print()
+            print(e)
             return None
 
 
 def waiting(win, x):
     win.fill((255, 255, 255))
-    font = pygame.font.SysFont(None, 30)
+    font = pygame.font.SysFont("Times", 30)
     rect = font.render("Waiting For Opponent", True, (0, 0, 0)).get_rect()
     rect.center = (win.get_width() // 2, win.get_height() // 2)
     text = font.render("Waiting For Opponent" + "." * x, True, (0, 0, 0))
     win.blit(text, rect)
-
-
-def draw(win, game, resources, p, pos, clicked):
-    game.draw(win, resources, p, pos, clicked)
 
 
 def main():
@@ -96,8 +92,7 @@ def main():
     resources = Resources(card_list)
 
     pygame.init()
-    pygame.font.init()
-    win = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    win = pygame.display.set_mode((750, 750), pygame.RESIZABLE)
     clock = pygame.time.Clock()
 
     count = 0
@@ -111,24 +106,25 @@ def main():
                 if event.type == pygame.QUIT:
                     active = False
                     pygame.quit()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    win = win = pygame.display.set_mode((750, 750))
+                # if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                #    win = pygame.display.set_mode((750, 750), pygame.RESIZABLE)
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     clicked = True
                     pos = pygame.mouse.get_pos()
             if connected:
                 game = n.send(game)
-                draw(win, game, resources, p, pos, clicked)
+                game.draw(win, resources, p, pos, clicked)
             else:
                 connected = n.wait(game)
-                waiting(win, (count // 16) % 4)
+                waiting(win, ((count // 24) % 3) + 1)
             count += 1
             clock.tick(60)
             pygame.display.update()
             if game is None:
                 active = False
                 pygame.quit()
-        except pygame.error:
+        except Exception as e:
+            print(e)
             active = False
             pygame.quit()
 

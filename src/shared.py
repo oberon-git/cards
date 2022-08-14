@@ -28,16 +28,6 @@ def recv_initial_game(conn):
         return Game(deck, players)
     except Exception as e:
         print(e)
-        return
-
-
-def recv_pickle_data(conn):
-    data = []
-    while True:
-        buff = conn.recv(512)
-        if not buff:
-            return pickle.loads(b''.join(data))
-        data.append(buff)
 
 
 def send_packet(conn, packet):
@@ -143,7 +133,7 @@ class Game:
                 self.draw_top_card(p)
 
     def draw_winner(self, win, p):
-        font = pygame.font.SysFont(None, 30)
+        font = pygame.font.SysFont("Times", 30)
         if self.winner == p:
             text = font.render("You Won!", True, (255, 255, 255))
         else:
@@ -246,7 +236,7 @@ class Player:
         self.h = copy
 
         for i in range(len(runs)-1):
-            if len(runs[i] == 7):
+            if len(runs[i]) == 7:
                 return True
             for j in range(i+1, len(runs)):
                 if len(runs[i]) + len(runs[j]) == 7:
