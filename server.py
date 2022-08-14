@@ -1,9 +1,8 @@
 import socket
-import pickle
 from _thread import start_new_thread
-from data import Data
-from game import Game
-from packet import *
+from _collections import deque
+from shared import *
+
 
 file_list = []
 for card in Data.CARD_TYPES.values():
@@ -15,92 +14,105 @@ for x in range(1, 8):
     file_list.append("assets/backgrounds/0" + str(x) + ".png")
 
 
-count = 0
-connections = []
-games = {}
+class Connection:
+    def __init__(self, conn):
+        self.conn = conn
+        self.ready = False
+        self.closed = False
+
+    def close(self):
+        self.conn.close()
+        self.ready = False
+        self.closed = True
 
 
-def client(g, c, o):
-    global connections, games
-    p = c % 2
-    connections[c][0].send(str.encode(str(p)))
-    data = connections[c][0].recv(128).decode()
+def client(conns, game):
+    x = 0 if len(conns) == 1 else 1
+    y = 0 if len(conns) == 2 else 1
+    send_str(conns[x].conn, str(x))
+    data = recv_str(conns[x].conn)
     if data == "received":
-        connections[c][0].send(str.encode(str(len(file_list))))
-        data = connections[c][0].recv(128).decode()
+        send_str(conns[x].conn, str(len(file_list)))
+        data = recv_str(conns[x].conn)
         if data == "received":
             for filename in file_list:
                 # print("Sending", filename)
-                connections[c][0].send(str.encode(filename))
-                data = connections[c][0].recv(128).decode()
+                send_str(conns[x].conn, filename)
+                data = recv_str(conns[x].conn)
                 if data == "send":
                     image = open(filename, 'rb')
                     while True:
                         buff = image.readline(512)
                         if not buff:
-                            connections[c][0].sendall(Data.END)
+                            conns[x].conn.sendall(Data.END)
                             break
-                        connections[c][0].sendall(buff)
+                        conns[x].conn.sendall(buff)
                     image.close()
                     # print(filename, "Sent")
-                    data = connections[c][0].recv(512).decode()
+                    data = recv_str(conns[x].conn)
                     if data != "received":
                         break
     print("Images Sent")
+    conns[x].ready = True
+    connected = False
     while True:
         try:
-            data = pickle.loads(connections[c][0].recv(1024))
-            if data is None:
-                connections[c][0].sendall(pickle.dumps(games[g]))
-                connections[c][1] = True
-            elif games[g].connected():
-                if games[g].game.turn == p:
-                    map_to_game(data, games[g])
-                    packet = Packet(games[g])
-                    connections[o][0].sendall(pickle.dumps(packet))
+            if connected:
+                if conns[x].closed or conns[y].closed:
+                    break
+                packet = recv_packet(conns[x].conn)
+                map_to_game(packet, game)
+                packet = Packet(game)
+                send_packet(conns[y].conn, packet)
+            if not connected:
+                data = conns[x].conn.recv(512)
+                if data == Data.END:
+                    send_initial_game(conns[x].conn, game)
                 else:
-                    if data.turn != games[g].game.turn:
-                        packet = Packet(games[g])
-                        connections[p][0].sendall(pickle.dumps(packet))
-                        print("Here")
+                    packet = Packet(game)
+                    if len(conns) == 2 and conns[x].ready and conns[y].ready:
+                        packet.connected = True
+                        send_packet(conns[x].conn, packet)
+                        connected = True
                     else:
-                        connections[o][0].sendall(pickle.dumps(None))
-            else:
-                connections[p][0].sendall(pickle.dumps(Packet(games[g])))
-            if not games[g].connected() and o < len(connections) and connections[c][1] and connections[o][1]:
-                games[g].connect()
-                packet = Packet(games[g])
-                connections[c][0].sendall(pickle.dumps(packet))
-                connections[o][0].sendall(pickle.dumps(packet))
-        except:
+                        send_packet(conns[x].conn, packet)
+        except Exception as e:
+            print(e)
             break
-    if games[g] is not None and o < len(connections):
-        try:
-            connections[o][0].send(pickle.dumps(0))
-        except OSError:
-            pass
-    games[g] = None
-    connections[c][0].close()
+    conns[x].close()
 
 
 def main():
-    global count
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(Data.ADDR)
-    s.listen(5)
-    print("Listening For Connections...")
-
     while True:
-        conn, addr = s.accept()
-        connections.append([conn, False])
-        game_id = count // 2
-        print(game_id)
-        if count % 2 == 0:
-            games[game_id] = Game('rummy')
-            start_new_thread(client, (game_id, len(connections)-1, len(connections)))
-        else:
-            start_new_thread(client, (game_id, len(connections)-1, len(connections)-2))
-        count += 1
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(Data.ADDR)
+            s.listen(2)
+            break
+        except OSError:
+            pass
+    print("Listening for Connections")
+
+    connections = []
+    game = None
+    while True:
+        try:
+            conn, addr = s.accept()
+            connection = Connection(conn)
+            if len(connections) == 0:
+                connections.append(connection)
+                game = Game()
+            elif len(connections) == 1:
+                if connections[0].closed:
+                    connections = [connection]
+                    game = Game()
+                else:
+                    connections.append(connection)
+            start_new_thread(client, (connections, game))
+            if len(connections) == 2:
+                connections = []
+        except Exception as e:
+            print(e)
 
 
 main()
