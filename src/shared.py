@@ -113,7 +113,7 @@ class Game:
 
     def draw(self, win, resources, p, mouse_pos, clicked, count):
         self.back = "castle_back_0" + str(((count // 24) % 2) + 1)
-        resources.draw_background(win, 8)
+        resources.draw_background(win, 2)
         if self.winner > -1:
             self.draw_winner(win, p)
             self.play_again_button.draw(win)
