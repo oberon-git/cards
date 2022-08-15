@@ -2,6 +2,25 @@ import pygame
 import _pickle as pickle
 from random import shuffle
 
+LOCAL = True
+# Data
+CARD_TYPES = {1: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king"}
+CARD_SUITS = {1: "spades", 2: "hearts", 3: "clubs", 4: "diamonds"}
+CARD_BACKS = ("castle_back_01", "castle_back_02")
+CARD_WIDTH = 69
+CARD_HEIGHT = 94
+HOST = "173.230.150.237"
+if LOCAL:
+    HOST = "localhost"
+PORT = 13058
+ADDR = (HOST, PORT)
+END = str.encode("EOF")
+# Color
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BACKGROUND = (100, 100, 100)
+BUTTON = (200, 200, 200)
+
 
 def send_str(conn, s):
     conn.sendall(str.encode(s))
@@ -49,13 +68,6 @@ def outline_card(win, x, y):
     pygame.draw.rect(win, (0, 0, 0), (x-2, y-2, CARD_WIDTH+2, CARD_HEIGHT+2), width=4)
 
 
-def sync_packets(packet, other):
-    other.top = packet.top
-    other.bottom = packet.bottom
-    other.curr = packet.curr
-    other.winner = packet.winner
-
-
 def map_to_game(packet, game):
     game.turn = packet.turn
     game.step = packet.step
@@ -80,6 +92,7 @@ class Packet:
 
 class Game:
     def __init__(self, deck=None, players=None):
+        pygame.init()
         self.n = 7
         if deck is None:
             self.deck = Deck()
@@ -89,22 +102,25 @@ class Game:
             self.players = [Player(self.deck.deal_hand(self.n)), Player(self.deck.deal_hand(self.n))]
         else:
             self.players = players
+        self.play_again_button = Button((750 // 2 - 100, 750 // 2 + 50, 200, 50), "Play Again", self.play_again)
         self.top = self.deck.deal_card()
         self.bottom = None
         self.back = "castle_back_01"
         self.turn = 0
         self.step = 0
         self.winner = -1
-        self.reset = False
+        self.over = self.reset = self.update = False
 
     def draw(self, win, resources, p, mouse_pos, clicked, count):
         self.back = "castle_back_0" + str(((count // 24) % 2) + 1)
-        resources.draw_background(win, 7)
+        resources.draw_background(win, 8)
         if self.winner > -1:
             self.draw_winner(win, p)
-            self.play_again(win, clicked, mouse_pos)
+            self.play_again_button.draw(win)
+            if clicked:
+                self.play_again_button.click(mouse_pos)
         mult = CARD_WIDTH + 20
-        offset = win.get_width() // 2 - mult * (self.n if self.step == 1 else self.n + 1) // 2
+        offset = (win.get_width() - (len(self.players[p].hand()) * mult) + 20) // 2
         hand = self.players[p].hand()
         to_discard = (False, -1, -1)
         for i in range(len(hand)):
@@ -144,17 +160,9 @@ class Game:
                 if clicked:
                     self.draw_top_card(p)
 
-    def play_again(self, win, clicked, pos):
-        rect = pygame.Rect(0, 0, 100, 50)
-        rect.center = (win.get_width() // 2, win.get_height() // 2 + 100)
-        pygame.draw.rect(win, rect, BUTTON)
-        font = pygame.font.SysFont("Times", 30)
-        text = font.render("Play Again", True, BLACK)
-        win.blit(text, rect)
-        if clicked:
-            if rect.x <= pos[0] <= rect.x + rect.w:
-                if rect.y <= pos[1] <= rect.y + rect.h:
-                    self.reset = True
+    def play_again(self):
+        self.reset = True
+        self.update = True
 
     def draw_winner(self, win, p):
         font = pygame.font.SysFont("Times", 30)
@@ -169,21 +177,25 @@ class Game:
     def draw_card_from_deck(self, p):
         self.players[p].draw_card(self.deck.deal_card())
         self.step = 1
+        self.update = True
 
     def draw_top_card(self, p):
         self.players[p].draw_card(self.top)
         self.top = self.bottom
         self.bottom = None
         self.step = 1
+        self.update = True
 
     def discard_card(self, p, c):
         self.players[p].play_card(c)
         if self.players[p].won():
             self.winner = p
+            self.over = True
         self.bottom = self.top
         self.top = c
         self.step = 0
         self.turn = 0 if self.turn == 1 else 1
+        self.update = True
 
 
 class Deck:
@@ -347,6 +359,25 @@ class Card:
         return self.c.__hash__()
 
 
+class Button:
+    def __init__(self, rect, text, action):
+        self.rect = rect
+        self.text = text
+        self.action = action
+        self.font = pygame.font.SysFont("Times", 30)
+        self.font_rect = pygame.Rect(rect)
+
+    def click(self, pos):
+        if self.rect[0] <= pos[0] <= self.rect[0] + self.rect[2]:
+            if self.rect[1] <= pos[1] <= self.rect[1] + self.rect[3]:
+                self.action()
+
+    def draw(self, win):
+        pygame.draw.rect(win, BUTTON, self.rect)
+        text = self.font.render(self.text, False, BLACK)
+        win.blit(text, self.font_rect)
+
+
 class Resources:
     def __init__(self, file_list):
         self.cards = {}
@@ -366,21 +397,3 @@ class Resources:
     def draw_background(self, win, key):
         image = pygame.transform.scale(self.backgrounds[key], (win.get_width(), win.get_height()))
         win.blit(image, (0, 0))
-
-
-# Data
-CARD_TYPES = {1: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king"}
-CARD_SUITS = {1: "spades", 2: "hearts", 3: "clubs", 4: "diamonds"}
-CARD_BACKS = ("castle_back_01", "castle_back_02")
-CARD_WIDTH = 69
-CARD_HEIGHT = 94
-HOST = 'localhost'  # "173.230.150.237"
-PORT = 13058
-ADDR = (HOST, PORT)
-END = str.encode("EOF")
-
-# Color
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-BACKGROUND = (100, 100, 100)
-BUTTON = (200, 200, 200)

@@ -9,7 +9,7 @@ for card in CARD_TYPES.values():
         file_list.append("assets/cards/" + card + "_of_" + suit + ".png")
 for back in CARD_BACKS:
     file_list.append("assets/cards/" + back + ".png")
-for i in range(1, 8):
+for i in range(1, 9):
     file_list.append("assets/backgrounds/0" + str(i) + ".png")
 
 
@@ -18,7 +18,7 @@ class Connection:
         self.conn = conn
         self.ready = False
         self.closed = False
-        self.turned = False
+        self.reset = False
 
     def close(self):
         self.conn.close()
@@ -41,38 +41,42 @@ def send_images(conn):
                             conn.sendall(END)
                             break
                         conn.sendall(buff)
+                    data = recv_str(conn)
+                    if data != "received":
+                        print("Failed To Load Assets")
+                        return
     print("Images Sent")
 
 
-def client(conns, game):
+def client(conns, games, g):
+    game = games[g]
     x = 0 if len(conns) == 1 else 1
     y = 0 if len(conns) == 2 else 1
     send_str(conns[x].conn, str(x))
     data = recv_str(conns[x].conn)
     if data == "received":
         send_images(conns[x].conn)
-    connected = reset = False
+    connected = False
     while True:
         try:
-            if reset:
+            if conns[x].reset:
                 data = conns[x].conn.recv(512)
                 if data == END:
-                    reset = False
-                    game = Game()
+                    conns[x].reset = False
+                    game = games[g]
                     send_initial_game(conns[x].conn, game)
-                else:
-                    send_packet(conns[x].conn, Packet(game))
             elif connected:
                 if conns[x].closed or conns[y].closed:
                     break
-                packet = recv_packet(conns[x].conn)
-                if game.turn == x:
-                    print(packet.turn, packet.step)
-                    map_to_game(packet, game)
+                data = recv_packet(conns[x].conn)
+                if type(data) == Packet:
+                    map_to_game(data, game)
                 packet = Packet(game)
                 send_packet(conns[y].conn, packet)
                 if packet.reset:
-                    reset = True
+                    conns[x].reset = True
+                    conns[y].reset = True
+                    games[g] = Game()
             elif not connected:
                 data = conns[x].conn.recv(512)
                 if data == END:
@@ -108,7 +112,8 @@ def main():
     print("Listening for Connections")
 
     connections = []
-    game = None
+    games = []
+    g = 0
     while True:
         try:
             conn, addr = s.accept()
@@ -116,16 +121,17 @@ def main():
             connection = Connection(conn)
             if len(connections) == 0:
                 connections.append(connection)
-                game = Game()
+                games.append(Game())
             elif len(connections) == 1:
                 if connections[0].closed:
                     connections = [connection]
-                    game = Game()
+                    games[g] = Game()
                 else:
                     connections.append(connection)
-            start_new_thread(client, (connections, game))
+            start_new_thread(client, (connections, games, g))
             if len(connections) == 2:
                 connections = []
+                g += 1
         except Exception as e:
             print(e)
 

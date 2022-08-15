@@ -17,7 +17,6 @@ class Network:
             card_list = []
             n = int(recv_str(self.client))
             send_str(self.client, "received")
-            # print(f"Sending {n} Images")
             if not os.path.exists("assets"):
                 os.mkdir("assets")
             if not os.path.exists("assets/cards"):
@@ -34,6 +33,7 @@ class Network:
                         data = self.recv_image()
                         file.write(data)
                     # print(filename, "Received")
+                    send_str(self.client, "received")
                 else:
                     send_str(self.client, "skip")
             print("Images Received")
@@ -60,13 +60,17 @@ class Network:
             print(e)
             return False
 
-    def send(self, game, p):
+    def send(self, game):
         try:
             if game is None:
                 self.client.sendall(END)
                 return recv_initial_game(self.client)
-            packet = Packet(game)
-            send_packet(self.client, packet)
+            if game.update:
+                game.update = False
+                packet = Packet(game)
+                send_packet(self.client, packet)
+            else:
+                self.client.sendall(pickle.dumps(None))
             packet = recv_packet(self.client)
             if packet.disconnected:
                 return None, False
@@ -100,11 +104,9 @@ def event_loop():
 def main():
     n = Network()
     p, card_list = n.connect()
-    game = n.send(None, p)
+    game = n.send(None)
     resources = Resources(card_list)
-
-    pygame.init()
-    win = pygame.display.set_mode((750, 750), pygame.RESIZABLE)
+    win = pygame.display.set_mode((750, 750))
     clock = pygame.time.Clock()
 
     count = 0
@@ -115,11 +117,11 @@ def main():
             active, clicked, pos = event_loop()
             if connected:
                 game.draw(win, resources, p, pos, clicked, count)
-                game, reset = n.send(game, p)
+                game, reset = n.send(game)
                 if game is None:
                     break
                 if reset:
-                    game = n.send(None, p)
+                    game = n.send(None)
             else:
                 connected = n.wait(game)
                 waiting(win, ((count // 24) % 3) + 1)
