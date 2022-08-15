@@ -112,7 +112,7 @@ class Game:
         self.over = self.reset = self.update = False
 
     def draw(self, win, resources, p, mouse_pos, clicked, count):
-        self.back = "castle_back_0" + str(((count // 24) % 2) + 1)
+        self.back = "castle_back_0" + str(((count // 8) % 2) + 1)
         resources.draw_background(win, 2)
         if self.winner > -1:
             self.draw_winner(win, p)
@@ -138,7 +138,7 @@ class Game:
         n = self.n
         if self.turn != p and self.step == 1:
             n += 1
-            offset = win.get_width() // 2 - mult * 4
+        offset = (win.get_width() - (n * mult) + 20) // 2
         for j in range(n):
             resources.draw_card(win, self.back, j * mult + offset, 30)
 
