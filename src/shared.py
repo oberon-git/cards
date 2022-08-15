@@ -2,7 +2,7 @@ import pygame
 import _pickle as pickle
 from random import shuffle
 
-LOCAL = True
+LOCAL = False
 # Data
 CARD_TYPES = {1: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king"}
 CARD_SUITS = {1: "spades", 2: "hearts", 3: "clubs", 4: "diamonds"}

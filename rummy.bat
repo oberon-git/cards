@@ -11,12 +11,7 @@ cd src
         python client.py
     %@EndTry%
     :@Catch
-        %@Try%
-            py client.py
-        %@EndTry%
-        :@Catch
-            echo You Do Not Have Python 3 Installed
-        :@EndCatch
+        py client.py
     :@EndCatch
 :@EndCatch
 
