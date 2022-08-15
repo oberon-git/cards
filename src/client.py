@@ -9,8 +9,8 @@ class Network:
 
     def connect(self):
         try:
-            print("Trying To Connect To", Data.HOST)
-            self.client.connect(Data.ADDR)
+            print("Trying To Connect To", HOST)
+            self.client.connect(ADDR)
             p = int(recv_str(self.client))
             send_str(self.client, "received")
             print("Connected")
@@ -33,7 +33,6 @@ class Network:
                     with open(filename, 'wb') as file:
                         data = self.recv_image()
                         file.write(data)
-                    send_str(self.client, "received")
                     # print(filename, "Received")
                 else:
                     send_str(self.client, "skip")
@@ -49,8 +48,8 @@ class Network:
             if not buff:
                 return data
             data += buff
-            if data.endswith(Data.END):
-                return data[:data.find(Data.END)]
+            if data.endswith(END):
+                return data[:data.find(END)]
 
     def wait(self, game):
         try:
@@ -61,23 +60,25 @@ class Network:
             print(e)
             return False
 
-    def send(self, game):
+    def send(self, game, p):
         try:
             if game is None:
-                self.client.sendall(Data.END)
+                self.client.sendall(END)
                 return recv_initial_game(self.client)
             packet = Packet(game)
             send_packet(self.client, packet)
             packet = recv_packet(self.client)
+            if packet.disconnected:
+                return None, False
             map_to_game(packet, game)
-            return game
+            return game, packet.reset
         except Exception as e:
             print(e)
             return None
 
 
 def waiting(win, x):
-    win.fill((255, 255, 255))
+    win.fill(WHITE)
     font = pygame.font.SysFont("Times", 30)
     rect = font.render("Waiting For Opponent", True, (0, 0, 0)).get_rect()
     rect.center = (win.get_width() // 2, win.get_height() // 2)
@@ -85,10 +86,21 @@ def waiting(win, x):
     win.blit(text, rect)
 
 
+def event_loop():
+    active = True
+    clicked = False
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            active = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            clicked = True
+    return active, clicked, pygame.mouse.get_pos()
+
+
 def main():
     n = Network()
     p, card_list = n.connect()
-    game = n.send(None)
+    game = n.send(None, p)
     resources = Resources(card_list)
 
     pygame.init()
@@ -96,37 +108,27 @@ def main():
     clock = pygame.time.Clock()
 
     count = 0
-    active = True
     connected = False
+    active = True
     while active:
         try:
-            clicked = False
-            pos = pygame.mouse.get_pos()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    active = False
-                    pygame.quit()
-                # if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                #    win = pygame.display.set_mode((750, 750), pygame.RESIZABLE)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    clicked = True
-                    pos = pygame.mouse.get_pos()
+            active, clicked, pos = event_loop()
             if connected:
-                game = n.send(game)
-                game.draw(win, resources, p, pos, clicked)
+                game.draw(win, resources, p, pos, clicked, count)
+                game, reset = n.send(game, p)
+                if game is None:
+                    break
+                if reset:
+                    game = n.send(None, p)
             else:
                 connected = n.wait(game)
                 waiting(win, ((count // 24) % 3) + 1)
             count += 1
             clock.tick(60)
             pygame.display.update()
-            if game is None:
-                active = False
-                pygame.quit()
-        except Exception as e:
-            print(e)
-            active = False
-            pygame.quit()
+        except pygame.error or socket.error:
+            break
+    pygame.quit()
 
 
 main()

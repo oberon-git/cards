@@ -39,14 +39,21 @@ def recv_packet(conn):
 
 
 def card_selected(x, y, pos):
-    if x <= pos[0] <= x + Data.CARD_WIDTH:
-        if y <= pos[1] <= y + Data.CARD_HEIGHT:
+    if x <= pos[0] <= x + CARD_WIDTH:
+        if y <= pos[1] <= y + CARD_HEIGHT:
             return True
     return False
 
 
 def outline_card(win, x, y):
-    pygame.draw.rect(win, (0, 0, 0), (x-2, y-2, Data.CARD_WIDTH+2, Data.CARD_HEIGHT+2), width=4)
+    pygame.draw.rect(win, (0, 0, 0), (x-2, y-2, CARD_WIDTH+2, CARD_HEIGHT+2), width=4)
+
+
+def sync_packets(packet, other):
+    other.top = packet.top
+    other.bottom = packet.bottom
+    other.curr = packet.curr
+    other.winner = packet.winner
 
 
 def map_to_game(packet, game):
@@ -56,6 +63,7 @@ def map_to_game(packet, game):
     game.bottom = packet.bottom
     game.deck.curr = packet.curr
     game.winner = packet.winner
+    game.reset = packet.reset
 
 
 class Packet:
@@ -66,7 +74,8 @@ class Packet:
         self.bottom = game.bottom
         self.curr = game.deck.curr
         self.winner = game.winner
-        self.connected = False
+        self.reset = game.reset
+        self.connected = self.disconnected = False
 
 
 class Game:
@@ -86,19 +95,22 @@ class Game:
         self.turn = 0
         self.step = 0
         self.winner = -1
+        self.reset = False
 
-    def draw(self, win, resources, p, mouse_pos, clicked):
+    def draw(self, win, resources, p, mouse_pos, clicked, count):
+        self.back = "castle_back_0" + str(((count // 24) % 2) + 1)
         resources.draw_background(win, 7)
         if self.winner > -1:
             self.draw_winner(win, p)
-        mult = Data.CARD_WIDTH + 20
+            self.play_again(win, clicked, mouse_pos)
+        mult = CARD_WIDTH + 20
         offset = win.get_width() // 2 - mult * (self.n if self.step == 1 else self.n + 1) // 2
         hand = self.players[p].hand()
         to_discard = (False, -1, -1)
         for i in range(len(hand)):
             c = hand[i]
             x = i * mult + offset
-            y = win.get_height() - Data.CARD_HEIGHT - 30
+            y = win.get_height() - CARD_HEIGHT - 30
             c.draw(win, resources, x, y)
             if self.turn == p and self.step == 1 and self.winner == -1 and card_selected(x, y, mouse_pos):
                 outline_card(win, x, y)
@@ -114,8 +126,8 @@ class Game:
         for j in range(n):
             resources.draw_card(win, self.back, j * mult + offset, 30)
 
-        x = win.get_width() // 2 - Data.CARD_WIDTH // 2 - mult // 2
-        y = win.get_height() // 2 - Data.CARD_HEIGHT // 2
+        x = win.get_width() // 2 - CARD_WIDTH // 2 - mult // 2
+        y = win.get_height() // 2 - CARD_HEIGHT // 2
         resources.draw_card(win, self.back, x, y)
         if self.turn == p and self.step == 0 and self.winner == -1 and card_selected(x, y, mouse_pos):
             outline_card(win, x, y)
@@ -127,17 +139,29 @@ class Game:
                 resources.draw_card(win, self.back, x, y)
             else:
                 resources.draw_card(win, self.top.card(), x, y)
-        if self.turn == p and self.step == 0 and self.winner == -1 and card_selected(x, y, mouse_pos):
-            outline_card(win, x, y)
-            if clicked:
-                self.draw_top_card(p)
+            if self.turn == p and self.step == 0 and self.winner == -1 and card_selected(x, y, mouse_pos):
+                outline_card(win, x, y)
+                if clicked:
+                    self.draw_top_card(p)
+
+    def play_again(self, win, clicked, pos):
+        rect = pygame.Rect(0, 0, 100, 50)
+        rect.center = (win.get_width() // 2, win.get_height() // 2 + 100)
+        pygame.draw.rect(win, rect, BUTTON)
+        font = pygame.font.SysFont("Times", 30)
+        text = font.render("Play Again", True, BLACK)
+        win.blit(text, rect)
+        if clicked:
+            if rect.x <= pos[0] <= rect.x + rect.w:
+                if rect.y <= pos[1] <= rect.y + rect.h:
+                    self.reset = True
 
     def draw_winner(self, win, p):
         font = pygame.font.SysFont("Times", 30)
         if self.winner == p:
-            text = font.render("You Won!", True, (255, 255, 255))
+            text = font.render("You Won!", True, WHITE)
         else:
-            text = font.render("You Lost!", True, (255, 255, 255))
+            text = font.render("You Lost!", True, WHITE)
         rect = text.get_rect()
         rect.center = (win.get_width() // 2, win.get_height() // 2 - 100)
         win.blit(text, rect)
@@ -159,14 +183,14 @@ class Game:
         self.bottom = self.top
         self.top = c
         self.step = 0
-        self.turn = 0 if p == 1 else 1
+        self.turn = 0 if self.turn == 1 else 1
 
 
 class Deck:
     def __init__(self):
         self.deck = []
-        for card in Data.CARD_TYPES.keys():
-            for suit in Data.CARD_SUITS.keys():
+        for card in CARD_TYPES.keys():
+            for suit in CARD_SUITS.keys():
                 c = Card(card, suit)
                 self.deck.append(c)
         shuffle(self.deck)
@@ -268,7 +292,7 @@ class Card:
     def __init__(self, v, s):
         self.v = v
         self.s = s
-        self.c = Data.CARD_TYPES[self.v] + Data.CARD_SUITS[self.s]
+        self.c = CARD_TYPES[self.v] + CARD_SUITS[self.s]
         self.sort = 0
 
     def draw(self, win, resources, x, y):
@@ -344,14 +368,19 @@ class Resources:
         win.blit(image, (0, 0))
 
 
-class Data:
-    CARD_TYPES = {1: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king"}
-    CARD_SUITS = {1: "spades", 2: "hearts", 3: "clubs", 4: "diamonds"}
-    CARD_BACKS = ("castle_back_01", "castle_back_02")
-    CARD_WIDTH = 69
-    CARD_HEIGHT = 94
-    BACKGROUND_COLOR = (100, 100, 100)
-    HOST = '173.230.150.237'
-    PORT = 13058
-    ADDR = (HOST, PORT)
-    END = str.encode("EOF")
+# Data
+CARD_TYPES = {1: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king"}
+CARD_SUITS = {1: "spades", 2: "hearts", 3: "clubs", 4: "diamonds"}
+CARD_BACKS = ("castle_back_01", "castle_back_02")
+CARD_WIDTH = 69
+CARD_HEIGHT = 94
+HOST = 'localhost'  # "173.230.150.237"
+PORT = 13058
+ADDR = (HOST, PORT)
+END = str.encode("EOF")
+
+# Color
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BACKGROUND = (100, 100, 100)
+BUTTON = (200, 200, 200)

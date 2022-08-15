@@ -4,10 +4,10 @@ from shared import *
 
 
 file_list = []
-for card in Data.CARD_TYPES.values():
-    for suit in Data.CARD_SUITS.values():
+for card in CARD_TYPES.values():
+    for suit in CARD_SUITS.values():
         file_list.append("assets/cards/" + card + "_of_" + suit + ".png")
-for back in Data.CARD_BACKS:
+for back in CARD_BACKS:
     file_list.append("assets/cards/" + back + ".png")
 for i in range(1, 8):
     file_list.append("assets/backgrounds/0" + str(i) + ".png")
@@ -18,11 +18,30 @@ class Connection:
         self.conn = conn
         self.ready = False
         self.closed = False
+        self.turned = False
 
     def close(self):
         self.conn.close()
         self.ready = False
         self.closed = True
+
+
+def send_images(conn):
+    send_str(conn, str(len(file_list)))
+    data = recv_str(conn)
+    if data == "received":
+        for filename in file_list:
+            send_str(conn, filename)
+            data = recv_str(conn)
+            if data == "send":
+                with open(filename, 'rb') as image:
+                    while True:
+                        buff = image.readline(512)
+                        if not buff:
+                            conn.sendall(END)
+                            break
+                        conn.sendall(buff)
+    print("Images Sent")
 
 
 def client(conns, game):
@@ -31,40 +50,32 @@ def client(conns, game):
     send_str(conns[x].conn, str(x))
     data = recv_str(conns[x].conn)
     if data == "received":
-        send_str(conns[x].conn, str(len(file_list)))
-        data = recv_str(conns[x].conn)
-        if data == "received":
-            for filename in file_list:
-                # print("Sending", filename)
-                send_str(conns[x].conn, filename)
-                data = recv_str(conns[x].conn)
-                if data == "send":
-                    image = open(filename, 'rb')
-                    while True:
-                        buff = image.readline(512)
-                        if not buff:
-                            conns[x].conn.sendall(Data.END)
-                            break
-                        conns[x].conn.sendall(buff)
-                    image.close()
-                    # print(filename, "Sent")
-                    data = recv_str(conns[x].conn)
-                    if data != "received":
-                        break
-    print("Images Sent")
-    connected = False
+        send_images(conns[x].conn)
+    connected = reset = False
     while True:
         try:
-            if connected:
+            if reset:
+                data = conns[x].conn.recv(512)
+                if data == END:
+                    reset = False
+                    game = Game()
+                    send_initial_game(conns[x].conn, game)
+                else:
+                    send_packet(conns[x].conn, Packet(game))
+            elif connected:
                 if conns[x].closed or conns[y].closed:
                     break
                 packet = recv_packet(conns[x].conn)
-                map_to_game(packet, game)
+                if game.turn == x:
+                    print(packet.turn, packet.step)
+                    map_to_game(packet, game)
                 packet = Packet(game)
                 send_packet(conns[y].conn, packet)
-            if not connected:
+                if packet.reset:
+                    reset = True
+            elif not connected:
                 data = conns[x].conn.recv(512)
-                if data == Data.END:
+                if data == END:
                     send_initial_game(conns[x].conn, game)
                     conns[x].ready = True
                 else:
@@ -78,6 +89,10 @@ def client(conns, game):
         except Exception as e:
             print(e)
             break
+    if len(conns) == 2 and not conns[y].closed:
+        packet = Packet(game)
+        packet.disconnected = True
+        send_packet(conns[y].conn, packet)
     conns[x].close()
 
 
@@ -85,7 +100,7 @@ def main():
     while True:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind(Data.ADDR)
+            s.bind(ADDR)
             s.listen(2)
             break
         except OSError:
@@ -97,6 +112,7 @@ def main():
     while True:
         try:
             conn, addr = s.accept()
+            print("Connected to", addr[0])
             connection = Connection(conn)
             if len(connections) == 0:
                 connections.append(connection)
