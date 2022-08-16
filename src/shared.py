@@ -1,16 +1,17 @@
 import pygame
+import yaml
 import _pickle as pickle
 from random import shuffle
 
-LOCAL = False
+appsettings = yaml.safe_load(open("../appsettings.yml", 'r'))
 # Data
-CARD_TYPES = {1: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "jack", 12: "queen", 13: "king"}
-CARD_SUITS = {1: "spades", 2: "hearts", 3: "clubs", 4: "diamonds"}
-CARD_BACKS = ("castle_back_01", "castle_back_02")
-CARD_WIDTH = 69
-CARD_HEIGHT = 94
+CARD_TYPES = appsettings["cards"]["types"]
+CARD_SUITS = appsettings["cards"]["suits"]
+CARD_BACKS = appsettings["cards"]["backs"]
+CARD_WIDTH = appsettings["cards"]["width"]
+CARD_HEIGHT = appsettings["cards"]["height"]
 HOST = "173.230.150.237"
-if LOCAL:
+if appsettings["local"]:
     HOST = "localhost"
 PORT = 13058
 ADDR = (HOST, PORT)
@@ -42,9 +43,11 @@ def send_initial_game(conn, game):
 
 def recv_initial_game(conn):
     try:
-        deck = pickle.loads(conn.recv(2048*4))
-        players = pickle.loads(conn.recv(2048*4))
-        return Game(deck, players)
+        game = recv_packet(conn)
+        while type(game) != Game:
+            send_packet(conn, None)
+            game = recv_packet(conn)
+        return game
     except Exception as e:
         print(e)
 
@@ -54,7 +57,15 @@ def send_packet(conn, packet):
 
 
 def recv_packet(conn):
-    return pickle.loads(conn.recv(2048*2))
+    packet = pickle.loads(conn.recv(2048*4))
+    if type(packet) == Packet:
+        return packet
+    if type(packet) == Deck:
+        players = recv_packet(conn)
+        if type(players) == list:
+            return Game(packet, players)
+        return players
+    return packet
 
 
 def card_selected(x, y, pos):
@@ -102,10 +113,20 @@ class Game:
             self.players = [Player(self.deck.deal_hand(self.n)), Player(self.deck.deal_hand(self.n))]
         else:
             self.players = players
-        self.play_again_button = Button((750 // 2 - 100, 750 // 2 + 50, 200, 50), "Play Again", self.play_again)
         self.top = self.deck.deal_card()
         self.bottom = None
+        self.turn = 0
+        self.step = 0
+        self.winner = -1
+        self.over = self.reset = self.update = False
         self.back = "castle_back_01"
+        self.play_again_button = Button((750 // 2 - 100, 750 // 2 + 100, 200, 50), "Play Again", self.play_again)
+
+    def reshuffle(self):
+        self.deck = Deck()
+        self.players = [Player(self.deck.deal_hand(self.n)), Player(self.deck.deal_hand(self.n))]
+        self.top = self.deck.deal_card()
+        self.bottom = None
         self.turn = 0
         self.step = 0
         self.winner = -1
@@ -116,9 +137,9 @@ class Game:
         resources.draw_background(win, 2)
         if self.winner > -1:
             self.draw_winner(win, p)
-            self.play_again_button.draw(win)
-            if clicked:
-                self.play_again_button.click(mouse_pos)
+        self.play_again_button.draw(win)
+        if clicked:
+            self.play_again_button.click(mouse_pos)
         mult = CARD_WIDTH + 20
         offset = (win.get_width() - (len(self.players[p].hand()) * mult) + 20) // 2
         hand = self.players[p].hand()

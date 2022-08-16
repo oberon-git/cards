@@ -47,7 +47,6 @@ def send_images(conn):
                         return
     print("Images Sent")
 
-
 def client(conns, games, g):
     game = games[g]
     x = 0 if len(conns) == 1 else 1
@@ -59,13 +58,7 @@ def client(conns, games, g):
     connected = False
     while True:
         try:
-            if conns[x].reset:
-                data = conns[x].conn.recv(512)
-                if data == END:
-                    conns[x].reset = False
-                    game = games[g]
-                    send_initial_game(conns[x].conn, game)
-            elif connected:
+            if connected:
                 if conns[x].closed or conns[y].closed:
                     break
                 data = recv_packet(conns[x].conn)
@@ -74,9 +67,9 @@ def client(conns, games, g):
                 packet = Packet(game)
                 send_packet(conns[y].conn, packet)
                 if packet.reset:
-                    conns[x].reset = True
-                    conns[y].reset = True
-                    games[g] = Game()
+                    game.reshuffle()
+                    send_initial_game(conns[x].conn, game)
+                    send_initial_game(conns[y].conn, game)
             elif not connected:
                 data = conns[x].conn.recv(512)
                 if data == END:
@@ -85,11 +78,8 @@ def client(conns, games, g):
                 else:
                     packet = Packet(game)
                     if len(conns) == 2 and conns[x].ready and conns[y].ready:
-                        packet.connected = True
-                        send_packet(conns[x].conn, packet)
-                        connected = True
-                    else:
-                        send_packet(conns[x].conn, packet)
+                        connected = packet.connected = True
+                    send_packet(conns[x].conn, packet)
         except Exception as e:
             print(e)
             break

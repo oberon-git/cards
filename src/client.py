@@ -72,10 +72,16 @@ class Network:
             else:
                 self.client.sendall(pickle.dumps(None))
             packet = recv_packet(self.client)
+            if type(packet) == Game:
+                return packet
+            if type(packet) != Packet:
+                return game
             if packet.disconnected:
-                return None, False
+                return None
+            if packet.reset:
+                return recv_initial_game(self.client)
             map_to_game(packet, game)
-            return game, packet.reset
+            return game
         except Exception as e:
             print(e)
             return None
@@ -117,11 +123,9 @@ def main():
             active, clicked, pos = event_loop()
             if connected:
                 game.draw(win, resources, p, pos, clicked, count)
-                game, reset = n.send(game)
+                game = n.send(game)
                 if game is None:
                     break
-                if reset:
-                    game = n.send(None)
             else:
                 connected = n.wait(game)
                 waiting(win, ((count // 24) % 3) + 1)
