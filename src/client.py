@@ -99,7 +99,7 @@ class Network:
                 return game, False
         except Exception as e:
             print(e)
-            return None
+            return None, False
 
 
 class Menu:
@@ -121,20 +121,13 @@ class Menu:
     def draw(self, win, resources, clicked, mouse_pos):
         win.fill(WHITE)
         if self.screen == 0:
-            self.play_button.draw(win, mouse_pos)
-            self.background_select_button.draw(win, mouse_pos)
-            if clicked:
-                self.play_button.click(mouse_pos)
-                self.background_select_button.click(mouse_pos)
+            self.play_button.draw(win, mouse_pos, clicked, resources)
+            self.background_select_button.draw(win, mouse_pos, clicked, resources)
         elif self.screen == 1:
             for key, select in self.background_selects.items():
-                select.draw(win, mouse_pos, resources)
-                if clicked:
-                    select.click(mouse_pos)
+                select.draw(win, mouse_pos, clicked, resources)
         if self.screen != 0:
-            self.back_button.draw(win, mouse_pos)
-            if clicked:
-                self.back_button.click(mouse_pos)
+            self.back_button.draw(win, mouse_pos, clicked, resources)
 
     def select_background_action(self):
         self.screen = 1
@@ -144,11 +137,13 @@ class Menu:
         row_offset = IMAGE_BUTTON_HEIGHT + spacing
         pos = (spacing, spacing)
         col = 0
+        print(BACKGROUND_COUNT)
         for i in range(1, BACKGROUND_COUNT + 1):
             selected = i == self.settings.background
             self.background_selects[i] = (Button(pos, i, self.select_background, selected))
             col += 1
             if col == 4:
+                col = 0
                 pos = (spacing, pos[1] + row_offset)
             else:
                 pos = (pos[0] + col_offset, pos[1])
@@ -199,28 +194,21 @@ def main(win, resources, usersettings, n, p):
                 game.draw(win, resources, usersettings, p, pos, clicked, count)
                 game, reset = n.send(game)
                 if game is None:
-                    break
+                    return startup()
                 if reset:
                     p = 0 if p == 1 else 1
             else:
                 connected = n.wait()
                 waiting(win, ((count // 24) % 3) + 1)
             count += 1
-            clock.tick(60)
+            clock.tick(FPS)
             pygame.display.update()
         except pygame.error or socket.error:
             break
     pygame.quit()
 
 
-def startup():
-    n = Network()
-    p, card_list = n.connect()
-    resources = Resources(card_list)
-    usersettings = UserSettings()
-
-    pygame.init()
-    win = pygame.display.set_mode((750, 750))
+def draw_menu(win, resources, usersettings, n, p):
     clock = pygame.time.Clock()
     menu = Menu(usersettings)
 
@@ -231,9 +219,19 @@ def startup():
         if menu.start:
             return main(win, resources, usersettings, n, p)
         n.wait()
-        clock.tick(60)
+        clock.tick(FPS)
         pygame.display.update()
     pygame.quit()
+
+
+def startup():
+    n = Network()
+    p, card_list = n.connect()
+    resources = Resources(card_list)
+    usersettings = UserSettings()
+    pygame.init()
+    win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    draw_menu(win, resources, usersettings, n, p)
 
 
 startup()

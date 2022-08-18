@@ -6,9 +6,9 @@ from random import shuffle
 with open("../appsettings.yml", 'r') as app_file:
     appsettings = yaml.safe_load(app_file)
 
-# Data
 WIN_WIDTH = appsettings["window"]["width"]
 WIN_HEIGHT = appsettings["window"]["width"]
+FPS = appsettings["window"]["width"]
 BUTTON_WIDTH = appsettings["buttons"]["classic"]["width"]
 BUTTON_HEIGHT = appsettings["buttons"]["classic"]["height"]
 IMAGE_BUTTON_WIDTH = appsettings["buttons"]["images"]["width"]
@@ -27,6 +27,7 @@ if appsettings["local"]:
 PORT = 13058
 ADDR = (HOST, PORT)
 END = str.encode("EOF")
+
 # Color
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -150,9 +151,7 @@ class Game:
         resources.draw_background(win, settings.background)
         if self.winner > -1:
             self.draw_winner(win, p)
-            self.play_again_button.draw(win, mouse_pos)
-            if clicked:
-                self.play_again_button.click(mouse_pos)
+            self.play_again_button.draw(win, mouse_pos, clicked, resources)
         mult = CARD_WIDTH + CARD_SPACING
         offset = (WIN_WIDTH - (len(self.players[p].hand()) * mult) + CARD_SPACING) // 2
         hand = self.players[p].hand()
@@ -420,20 +419,26 @@ class Button:
                 return True
         return False
 
-    def click(self, pos):
-        if self.in_range(pos):
-            if self.type == 0:
-                self.action()
-            elif self.type == 1:
-                self.action(self.key)
-
-    def draw(self, win, mouse_pos, resources=None):
+    def click(self):
         if self.type == 0:
-            pygame.draw.rect(win, BUTTON, self.rect)
+            self.action()
+        elif self.type == 1:
+            self.action(self.key)
+
+    def draw_button(self, win):
+        pygame.draw.rect(win, BUTTON, self.rect)
+
+    def draw(self, win, mouse_pos, clicked, resources):
+        if self.type == 0:
+            self.draw_button(win)
             win.blit(self.text, self.font_rect)
         elif self.type == 1:
             resources.draw_background_select(win, self.key, self.pos)
-        if self.in_range(mouse_pos) or self.selected:
+        if self.in_range(mouse_pos):
+            self.outline(win)
+            if clicked:
+                self.click()
+        elif self.selected:
             self.outline(win)
 
 
@@ -441,6 +446,7 @@ class Resources:
     def __init__(self, file_list):
         self.cards = {}
         self.backgrounds = {}
+        self.ui = {}
         for filename in file_list:
             if "cards" in filename:
                 key = filename.replace("assets/cards/", "").replace("_of_", "").replace(".png", "")

@@ -11,7 +11,7 @@ for card in CARD_TYPES.values():
 for back in CARD_BACKS:
     file_list.append("assets/cards/" + back + ".png")
 for i in range(1, BACKGROUND_COUNT + 1):
-    file_list.append("assets/backgrounds/0" + str(i) + ".png")
+    file_list.append("assets/backgrounds/" + ("0" if i < 10 else "") + str(i) + ".png")
 
 
 class Connection:
