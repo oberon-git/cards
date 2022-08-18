@@ -1,4 +1,16 @@
 local: true
+window:
+  width: 750
+  height: 750
+buttons:
+  classic:
+    width: 300
+    height: 50
+  images:
+    width: 100
+    height: 100
+backgrounds:
+  count: 8
 cards:
   types:
     1: ace
@@ -22,4 +34,6 @@ cards:
   backs: [castle_back_01, castle_back_02]
   width: 69
   height: 94
+  spacing: 20
+
 

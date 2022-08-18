@@ -3,13 +3,24 @@ import yaml
 import _pickle as pickle
 from random import shuffle
 
-appsettings = yaml.safe_load(open("../appsettings.yml", 'r'))
+with open("../appsettings.yml", 'r') as app_file:
+    appsettings = yaml.safe_load(app_file)
+
 # Data
+WIN_WIDTH = appsettings["window"]["width"]
+WIN_HEIGHT = appsettings["window"]["width"]
+BUTTON_WIDTH = appsettings["buttons"]["classic"]["width"]
+BUTTON_HEIGHT = appsettings["buttons"]["classic"]["height"]
+IMAGE_BUTTON_WIDTH = appsettings["buttons"]["images"]["width"]
+IMAGE_BUTTON_HEIGHT = appsettings["buttons"]["images"]["height"]
+BACKGROUND_COUNT = appsettings["backgrounds"]["count"]
 CARD_TYPES = appsettings["cards"]["types"]
 CARD_SUITS = appsettings["cards"]["suits"]
 CARD_BACKS = appsettings["cards"]["backs"]
 CARD_WIDTH = appsettings["cards"]["width"]
 CARD_HEIGHT = appsettings["cards"]["height"]
+CARD_SPACING = appsettings["cards"]["spacing"]
+OUTLINE_WIDTH = 3
 HOST = "173.230.150.237"
 if appsettings["local"]:
     HOST = "localhost"
@@ -21,6 +32,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BACKGROUND = (100, 100, 100)
 BUTTON = (200, 200, 200)
+OUTLINE = (255, 255, 0)
 
 
 def send_str(conn, s):
@@ -76,7 +88,8 @@ def card_selected(x, y, pos):
 
 
 def outline_card(win, x, y):
-    pygame.draw.rect(win, (0, 0, 0), (x-2, y-2, CARD_WIDTH+2, CARD_HEIGHT+2), width=4)
+    rect = (x - OUTLINE_WIDTH, y - OUTLINE_WIDTH, CARD_WIDTH + OUTLINE_WIDTH, CARD_HEIGHT + OUTLINE_WIDTH)
+    pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
 
 
 def map_to_game(packet, game):
@@ -120,7 +133,7 @@ class Game:
         self.winner = -1
         self.over = self.reset = self.update = False
         self.back = "castle_back_01"
-        self.play_again_button = Button((750 // 2 - 100, 750 // 2 + 100, 200, 50), "Play Again", self.play_again)
+        self.play_again_button = Button((WIN_WIDTH // 2 - 100, WIN_HEIGHT // 2 + 100), "Play Again", self.play_again)
 
     def reshuffle(self):
         self.deck = Deck()
@@ -132,22 +145,22 @@ class Game:
         self.winner = -1
         self.over = self.reset = self.update = False
 
-    def draw(self, win, resources, p, mouse_pos, clicked, count):
+    def draw(self, win, resources, settings, p, mouse_pos, clicked, count):
         self.back = "castle_back_0" + str(((count // 8) % 2) + 1)
-        resources.draw_background(win, 2)
+        resources.draw_background(win, settings.background)
         if self.winner > -1:
             self.draw_winner(win, p)
-        self.play_again_button.draw(win)
-        if clicked:
-            self.play_again_button.click(mouse_pos)
-        mult = CARD_WIDTH + 20
-        offset = (win.get_width() - (len(self.players[p].hand()) * mult) + 20) // 2
+            self.play_again_button.draw(win, mouse_pos)
+            if clicked:
+                self.play_again_button.click(mouse_pos)
+        mult = CARD_WIDTH + CARD_SPACING
+        offset = (WIN_WIDTH - (len(self.players[p].hand()) * mult) + CARD_SPACING) // 2
         hand = self.players[p].hand()
         to_discard = (False, -1, -1)
         for i in range(len(hand)):
             c = hand[i]
             x = i * mult + offset
-            y = win.get_height() - CARD_HEIGHT - 30
+            y = WIN_HEIGHT - CARD_HEIGHT - 30
             c.draw(win, resources, x, y)
             if self.turn == p and self.step == 1 and self.winner == -1 and card_selected(x, y, mouse_pos):
                 outline_card(win, x, y)
@@ -159,12 +172,12 @@ class Game:
         n = self.n
         if self.turn != p and self.step == 1:
             n += 1
-        offset = (win.get_width() - (n * mult) + 20) // 2
+        offset = (WIN_WIDTH - (n * mult) + CARD_SPACING) // 2
         for j in range(n):
             resources.draw_card(win, self.back, j * mult + offset, 30)
 
-        x = win.get_width() // 2 - CARD_WIDTH // 2 - mult // 2
-        y = win.get_height() // 2 - CARD_HEIGHT // 2
+        x = WIN_WIDTH // 2 - CARD_WIDTH // 2 - mult // 2
+        y = WIN_HEIGHT // 2 - CARD_HEIGHT // 2
         resources.draw_card(win, self.back, x, y)
         if self.turn == p and self.step == 0 and self.winner == -1 and card_selected(x, y, mouse_pos):
             outline_card(win, x, y)
@@ -192,7 +205,7 @@ class Game:
         else:
             text = font.render("You Lost!", True, WHITE)
         rect = text.get_rect()
-        rect.center = (win.get_width() // 2, win.get_height() // 2 - 100)
+        rect.center = (WIN_WIDTH // 2, WIN_HEIGHT // 2 - 100)
         win.blit(text, rect)
 
     def draw_card_from_deck(self, p):
@@ -381,22 +394,47 @@ class Card:
 
 
 class Button:
-    def __init__(self, rect, text, action):
-        self.rect = rect
-        self.text = text
+    def __init__(self, pos, content, action, selected=False):
+        self.pos = pos
         self.action = action
-        self.font = pygame.font.SysFont("Times", 30)
-        self.font_rect = pygame.Rect(rect)
+        self.selected = selected
+        if type(content) == str:
+            self.type = 0
+            self.rect = (pos[0], pos[1], BUTTON_WIDTH, BUTTON_HEIGHT)
+            self.font = pygame.font.SysFont("Times", 30)
+            self.text = self.font.render(content, False, BLACK)
+            self.font_rect = self.text.get_rect()
+            self.font_rect.center = (pos[0] + BUTTON_WIDTH // 2, pos[1] + BUTTON_HEIGHT // 2)
+        if type(content) == int:
+            self.type = 1
+            self.rect = (pos[0], pos[1], IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT)
+            self.key = content
 
-    def click(self, pos):
+    def outline(self, win):
+        rect = (self.rect[0] - OUTLINE_WIDTH, self.rect[1] - OUTLINE_WIDTH, self.rect[2] + OUTLINE_WIDTH, self.rect[3] + OUTLINE_WIDTH)
+        pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
+
+    def in_range(self, pos):
         if self.rect[0] <= pos[0] <= self.rect[0] + self.rect[2]:
             if self.rect[1] <= pos[1] <= self.rect[1] + self.rect[3]:
-                self.action()
+                return True
+        return False
 
-    def draw(self, win):
-        pygame.draw.rect(win, BUTTON, self.rect)
-        text = self.font.render(self.text, False, BLACK)
-        win.blit(text, self.font_rect)
+    def click(self, pos):
+        if self.in_range(pos):
+            if self.type == 0:
+                self.action()
+            elif self.type == 1:
+                self.action(self.key)
+
+    def draw(self, win, mouse_pos, resources=None):
+        if self.type == 0:
+            pygame.draw.rect(win, BUTTON, self.rect)
+            win.blit(self.text, self.font_rect)
+        elif self.type == 1:
+            resources.draw_background_select(win, self.key, self.pos)
+        if self.in_range(mouse_pos) or self.selected:
+            self.outline(win)
 
 
 class Resources:
@@ -416,5 +454,9 @@ class Resources:
         win.blit(image, (x, y))
 
     def draw_background(self, win, key):
-        image = pygame.transform.scale(self.backgrounds[key], (win.get_width(), win.get_height()))
+        image = pygame.transform.scale(self.backgrounds[key], (WIN_WIDTH, WIN_HEIGHT))
         win.blit(image, (0, 0))
+
+    def draw_background_select(self, win, key, pos):
+        image = pygame.transform.scale(self.backgrounds[key], (IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT))
+        win.blit(image, pos)
