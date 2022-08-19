@@ -103,31 +103,42 @@ class Network:
 
 
 class Menu:
-    def __init__(self, settings):
+    def __init__(self, settings, paused=False):
         self.settings = settings
+        self.paused = paused
         self.n = 2
-        self.play_button = Button(self.get_button_rect(1), "Play", self.play)
+        self.play_button = Button(self.get_button_rect(1), "Continue" if self.paused else "Play", self.play)
         self.background_select_button = Button(self.get_button_rect(2), "Select Background", self.select_background_action)
         self.back_button = Button((50, WIN_HEIGHT - BUTTON_HEIGHT - 50), "Back", self.back)
+        self.pause_button = Button((WIN_WIDTH - 50, 20), None, self.pause)
         self.background_selects = {}
         self.selected_background = None
-        self.start = False
-        self.screen = 0
+        self.start = self.active = False
+        self.screen = 2 if self.paused else 0
 
     def get_button_rect(self, x):
         offset = -75 * (self.n - x)
         return WIN_WIDTH // 2 - BUTTON_WIDTH // 2, WIN_HEIGHT // 2 + offset - BUTTON_HEIGHT // 2
 
     def draw(self, win, resources, clicked, mouse_pos):
-        win.fill(WHITE)
+        if self.screen != 2:
+            win.fill(WHITE)
         if self.screen == 0:
             self.play_button.draw(win, mouse_pos, clicked, resources)
             self.background_select_button.draw(win, mouse_pos, clicked, resources)
         elif self.screen == 1:
             for key, select in self.background_selects.items():
                 select.draw(win, mouse_pos, clicked, resources)
-        if self.screen != 0:
             self.back_button.draw(win, mouse_pos, clicked, resources)
+        elif self.screen == 2:
+            self.pause_button.draw(win, mouse_pos, clicked, resources)
+        elif self.screen == 3:
+            self.play_button.draw(win, mouse_pos, clicked, resources)
+            self.background_select_button.draw(win, mouse_pos, clicked, resources)
+
+    def pause(self):
+        self.screen = 3
+        self.active = True
 
     def select_background_action(self):
         self.screen = 1
@@ -154,10 +165,13 @@ class Menu:
         self.background_selects[key].selected = True
 
     def back(self):
-        self.screen = 0
+        self.screen = 3 if self.paused else 0
 
     def play(self):
         self.start = True
+        if self.paused:
+            self.active = False
+            self.screen = 2
 
 
 def waiting(win, x):
@@ -182,6 +196,7 @@ def event_loop():
 
 def main(win, resources, usersettings, n, p):
     game = n.send(None)
+    menu = None
     clock = pygame.time.Clock()
 
     count = 0
@@ -191,7 +206,9 @@ def main(win, resources, usersettings, n, p):
         try:
             active, clicked, pos = event_loop()
             if connected:
-                game.draw(win, resources, usersettings, p, pos, clicked, count)
+                if not menu.active:
+                    game.draw(win, resources, usersettings, p, pos, clicked, count)
+                menu.draw(win, resources, clicked, pos)
                 game, reset = n.send(game)
                 if game is None:
                     return startup()
@@ -200,6 +217,8 @@ def main(win, resources, usersettings, n, p):
             else:
                 connected = n.wait()
                 waiting(win, ((count // 24) % 3) + 1)
+                if connected:
+                    menu = Menu(usersettings, True)
             count += 1
             clock.tick(FPS)
             pygame.display.update()

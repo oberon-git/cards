@@ -3,6 +3,8 @@ import yaml
 import _pickle as pickle
 from random import shuffle
 
+pygame.init()
+
 with open("../appsettings.yml", 'r') as app_file:
     appsettings = yaml.safe_load(app_file)
 
@@ -117,7 +119,6 @@ class Packet:
 
 class Game:
     def __init__(self, deck=None, players=None):
-        pygame.init()
         self.n = 7
         if deck is None:
             self.deck = Deck()
@@ -134,7 +135,7 @@ class Game:
         self.winner = -1
         self.over = self.reset = self.update = False
         self.back = "castle_back_01"
-        self.play_again_button = Button((WIN_WIDTH // 2 - 100, WIN_HEIGHT // 2 + 100), "Play Again", self.play_again)
+        self.play_again_button = Button((WIN_WIDTH // 2 - BUTTON_WIDTH // 2, WIN_HEIGHT // 2 + 100), "Play Again", self.play_again)
 
     def reshuffle(self):
         self.deck = Deck()
@@ -408,8 +409,12 @@ class Button:
             self.type = 1
             self.rect = (pos[0], pos[1], IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT)
             self.key = content
+        if content is None:
+            self.type = 2
+            self.rect = (self.pos[0], self.pos[1], 30, 40)
 
     def outline(self, win):
+        # if self.type != 2:
         rect = (self.rect[0] - OUTLINE_WIDTH, self.rect[1] - OUTLINE_WIDTH, self.rect[2] + OUTLINE_WIDTH, self.rect[3] + OUTLINE_WIDTH)
         pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
 
@@ -420,13 +425,17 @@ class Button:
         return False
 
     def click(self):
-        if self.type == 0:
-            self.action()
-        elif self.type == 1:
+        if self.type == 1:
             self.action(self.key)
+        else:
+            self.action()
 
     def draw_button(self, win):
         pygame.draw.rect(win, BUTTON, self.rect)
+
+    def draw_pause_button(self, win):
+        pygame.draw.rect(win, BLACK, (self.pos[0], self.pos[1], 10, 40))
+        pygame.draw.rect(win, BLACK, (self.pos[0] + 20, self.pos[1], 10, 40))
 
     def draw(self, win, mouse_pos, clicked, resources):
         if self.type == 0:
@@ -434,6 +443,8 @@ class Button:
             win.blit(self.text, self.font_rect)
         elif self.type == 1:
             resources.draw_background_select(win, self.key, self.pos)
+        elif self.type == 2:
+            self.draw_pause_button(win)
         if self.in_range(mouse_pos):
             self.outline(win)
             if clicked:
