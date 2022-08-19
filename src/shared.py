@@ -414,9 +414,9 @@ class Button:
             self.rect = (self.pos[0], self.pos[1], 30, 40)
 
     def outline(self, win):
-        # if self.type != 2:
-        rect = (self.rect[0] - OUTLINE_WIDTH, self.rect[1] - OUTLINE_WIDTH, self.rect[2] + OUTLINE_WIDTH, self.rect[3] + OUTLINE_WIDTH)
-        pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
+        if self.type != 2:
+            rect = (self.rect[0] - OUTLINE_WIDTH, self.rect[1] - OUTLINE_WIDTH, self.rect[2] + OUTLINE_WIDTH, self.rect[3] + OUTLINE_WIDTH)
+            pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
 
     def in_range(self, pos):
         if self.rect[0] <= pos[0] <= self.rect[0] + self.rect[2]:
