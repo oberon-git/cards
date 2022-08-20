@@ -39,12 +39,6 @@ class Network:
             card_list = []
             n = int(recv_str(self.client))
             send_str(self.client, "received")
-            if not os.path.exists("assets"):
-                os.mkdir("assets")
-            if not os.path.exists("assets/cards"):
-                os.mkdir("assets/cards")
-            if not os.path.exists("assets/backgrounds"):
-                os.mkdir("assets/backgrounds")
             for _ in range(n):
                 filename = self.client.recv(128).decode()
                 card_list.append(filename)
@@ -299,7 +293,21 @@ def setup_win(settings, resources):
     return win
 
 
+def setup_dir():
+    if not os.path.exists("assets"):
+        os.mkdir("assets")
+    if not os.path.exists("assets/cards"):
+        os.mkdir("assets/cards")
+    if not os.path.exists("assets/backgrounds"):
+        os.mkdir("assets/backgrounds")
+    if not os.path.exists("../usersettings.yml"):
+        default_settings = {"background": 1, "game": 1}
+        with open("../usersettings.yml", 'w') as user_file:
+            yaml.dump(default_settings, user_file)
+
+
 def startup():
+    setup_dir()
     n = Network()
     p, card_list = n.connect()
     resources = Resources(card_list)
