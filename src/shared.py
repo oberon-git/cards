@@ -4,25 +4,35 @@ import _pickle as pickle
 from random import shuffle
 
 pygame.init()
+clock = pygame.time.Clock()
 
 with open("../appsettings.yml", 'r') as app_file:
     appsettings = yaml.safe_load(app_file)
 
 WIN_WIDTH = appsettings["window"]["width"]
 WIN_HEIGHT = appsettings["window"]["width"]
-FPS = appsettings["window"]["width"]
+FPS = appsettings["window"]["fps"]
 BUTTON_WIDTH = appsettings["buttons"]["classic"]["width"]
 BUTTON_HEIGHT = appsettings["buttons"]["classic"]["height"]
 IMAGE_BUTTON_WIDTH = appsettings["buttons"]["images"]["width"]
 IMAGE_BUTTON_HEIGHT = appsettings["buttons"]["images"]["height"]
 GAMES = appsettings["games"]
 BACKGROUND_COUNT = appsettings["backgrounds"]["count"]
+BACKGROUND_ROUTE = appsettings["backgrounds"]["route"]
+BACKGROUND_EXTENSION = appsettings["backgrounds"]["extension"]
 CARD_TYPES = appsettings["cards"]["types"]
 CARD_SUITS = appsettings["cards"]["suits"]
 CARD_BACKS = appsettings["cards"]["backs"]
 CARD_WIDTH = appsettings["cards"]["width"]
 CARD_HEIGHT = appsettings["cards"]["height"]
 CARD_SPACING = appsettings["cards"]["spacing"]
+CARD_ROUTE = appsettings["cards"]["route"]
+CARD_EXTENSION = appsettings["cards"]["extension"]
+UI_ELEMENTS = appsettings["ui"]["elements"]
+UI_ROUTE = appsettings["ui"]["route"]
+UI_EXTENSION = appsettings["ui"]["extension"]
+ARROW_SIZE = appsettings["ui"]["arrow_size"]
+BLINK_SPEED = appsettings["animation"]["blink_speed"]
 OUTLINE_WIDTH = 3
 HOST = "173.230.150.237"
 if appsettings["local"]:
@@ -30,6 +40,9 @@ if appsettings["local"]:
 PORT = 13058
 ADDR = (HOST, PORT)
 END = str.encode("EOF")
+RESET = 0
+GAME_OVER = 1
+NEW_GAME = 2
 
 # Color
 WHITE = (255, 255, 255)
@@ -37,6 +50,10 @@ BLACK = (0, 0, 0)
 BACKGROUND = (100, 100, 100)
 BUTTON = (200, 200, 200)
 OUTLINE = (255, 255, 0)
+
+
+def tick():
+    clock.tick(FPS)
 
 
 def send_str(conn, s):
@@ -47,23 +64,34 @@ def recv_str(conn):
     return conn.recv(512).decode()
 
 
+def send_player(conn, player):
+    send_packet(conn, player)
+
+
+def recv_player(conn):
+    player = recv_packet(conn)
+    if type(player) == Packet:
+        send_packet(conn, GAME_OVER)
+        return recv_player(conn)
+    return player
+
+
 def send_initial_game(conn, game):
     try:
-        conn.sendall(pickle.dumps(game.deck))
-        conn.sendall(pickle.dumps(game.players))
-        return True
+        send_packet(conn, game.deck)
+        send_packet(conn, game.players)
     except Exception as e:
         print(e)
-        return False
 
 
 def recv_initial_game(conn):
     try:
-        game = recv_packet(conn)
-        while type(game) != Game:
-            send_packet(conn, None)
-            game = recv_packet(conn)
-        return game
+        deck = recv_packet(conn)
+        if type(deck) == Packet:
+            send_packet(conn, RESET)
+            return recv_initial_game(conn)
+        players = recv_packet(conn)
+        return Game(deck, players)
     except Exception as e:
         print(e)
 
@@ -74,13 +102,6 @@ def send_packet(conn, packet):
 
 def recv_packet(conn):
     packet = pickle.loads(conn.recv(2048*4))
-    if type(packet) == Packet:
-        return packet
-    if type(packet) == Deck:
-        players = recv_packet(conn)
-        if type(players) == list:
-            return Game(packet, players)
-        return players
     return packet
 
 
@@ -96,6 +117,11 @@ def outline_card(win, x, y):
     pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
 
 
+def draw_center_lines(win):
+    pygame.draw.line(win, BLACK, (0, WIN_HEIGHT // 2), (WIN_WIDTH, WIN_HEIGHT // 2))
+    pygame.draw.line(win, BLACK, (WIN_WIDTH // 2, 0), (WIN_WIDTH // 2, WIN_HEIGHT))
+
+
 def map_to_game(packet, game):
     game.turn = packet.turn
     game.step = packet.step
@@ -104,6 +130,7 @@ def map_to_game(packet, game):
     game.deck.curr = packet.curr
     game.winner = packet.winner
     game.reset = packet.reset
+    game.over = packet.over
 
 
 class Packet:
@@ -115,6 +142,7 @@ class Packet:
         self.curr = game.deck.curr
         self.winner = game.winner
         self.reset = game.reset
+        self.over = game.over
         self.connected = self.disconnected = False
 
 
@@ -134,7 +162,7 @@ class Game:
         self.turn = 0
         self.step = 0
         self.winner = -1
-        self.over = self.reset = self.update = False
+        self.over = self.reset = self.update = self.show_opponents_hand = False
         self.back = "castle_back_01"
         self.play_again_button = Button((WIN_WIDTH // 2 - BUTTON_WIDTH // 2, WIN_HEIGHT // 2 + 100), "Play Again", self.play_again)
 
@@ -146,14 +174,16 @@ class Game:
         self.turn = 0
         self.step = 0
         self.winner = -1
-        self.over = self.reset = self.update = False
+        self.over = self.reset = self.update = self.show_opponents_hand = False
 
     def draw(self, win, resources, settings, p, mouse_pos, clicked, count):
-        self.back = "castle_back_0" + str(((count // 8) % 2) + 1)
         resources.draw_background(win, settings.background)
-        if self.winner > -1:
+        self.back = "castle_back_0" + str(((count // BLINK_SPEED) % 2) + 1)
+        if self.over:
             self.draw_winner(win, p)
             self.play_again_button.draw(win, mouse_pos, clicked, resources)
+        else:
+            self.draw_pointer(win, resources, count, p)
         mult = CARD_WIDTH + CARD_SPACING
         offset = (WIN_WIDTH - (len(self.players[p].hand()) * mult) + CARD_SPACING) // 2
         hand = self.players[p].hand()
@@ -163,41 +193,65 @@ class Game:
             x = i * mult + offset
             y = WIN_HEIGHT - CARD_HEIGHT - 30
             c.draw(win, resources, x, y)
-            if self.turn == p and self.step == 1 and self.winner == -1 and card_selected(x, y, mouse_pos):
+            if self.turn == p and self.step == 1 and not self.over and card_selected(x, y, mouse_pos):
                 outline_card(win, x, y)
                 if clicked:
                     to_discard = (True, p, c)
         if to_discard[0]:
             self.discard_card(to_discard[1], to_discard[2])
 
-        n = self.n
-        if self.turn != p and self.step == 1:
-            n += 1
-        offset = (WIN_WIDTH - (n * mult) + CARD_SPACING) // 2
-        for j in range(n):
-            resources.draw_card(win, self.back, j * mult + offset, 30)
+        if self.show_opponents_hand:
+            o = 0 if p == 1 else 1
+            hand = self.players[o].hand()
+            for i in range(len(hand)):
+                c = hand[i]
+                x = i * mult + offset
+                y = 30
+                c.draw(win, resources, x, y)
+        else:
+            n = self.n + 1 if self.turn != p and self.step == 1 else self.n
+            offset = (WIN_WIDTH - (n * mult) + CARD_SPACING) // 2
+            for i in range(n):
+                resources.draw_card(win, self.back, i * mult + offset, 30)
 
         x = WIN_WIDTH // 2 - CARD_WIDTH // 2 - mult // 2
         y = WIN_HEIGHT // 2 - CARD_HEIGHT // 2
         resources.draw_card(win, self.back, x, y)
-        if self.turn == p and self.step == 0 and self.winner == -1 and card_selected(x, y, mouse_pos):
+        if self.turn == p and self.step == 0 and not self.over and card_selected(x, y, mouse_pos):
             outline_card(win, x, y)
             if clicked:
                 self.draw_card_from_deck(p)
         x += mult
-        if self.top is not None:
-            if self.winner > 0:
-                resources.draw_card(win, self.back, x, y)
-            else:
-                resources.draw_card(win, self.top.card(), x, y)
-            if self.turn == p and self.step == 0 and self.winner == -1 and card_selected(x, y, mouse_pos):
+        if self.over:
+            resources.draw_card(win, self.back, x, y)
+        elif self.top is not None:
+            resources.draw_card(win, self.top.card(), x, y)
+            if self.turn == p and self.step == 0 and card_selected(x, y, mouse_pos):
                 outline_card(win, x, y)
                 if clicked:
                     self.draw_top_card(p)
 
+    def draw_pointer(self, win, resources, count, p):
+        if (count // BLINK_SPEED) % 2 == 0:
+            if p == self.turn:
+                resources.draw_arrow(win, (WIN_WIDTH // 2 - ARROW_SIZE // 2, WIN_HEIGHT - 150 - ARROW_SIZE), 0)
+            else:
+                resources.draw_arrow(win, (WIN_WIDTH // 2 - ARROW_SIZE // 2, 150), 1)
+
     def play_again(self):
         self.reset = True
         self.update = True
+
+    def set_opponent(self, player, p):
+        o = 0 if p == 1 else 1
+        self.players[o] = player
+        self.show_opponents_hand = True
+
+    def get_player(self, p):
+        return self.players[p]
+
+    def set_player(self, player, p):
+        self.players[p] = player
 
     def draw_winner(self, win, p):
         font = pygame.font.SysFont("Times", 30)
@@ -273,6 +327,9 @@ class Player:
     def hand(self):
         return self.h
 
+    def set_hand(self, hand):
+        self.h = hand
+
     def won(self):
         copy = self.h.copy()
         self.sort_by_suit()
@@ -285,7 +342,7 @@ class Player:
             while c < len(self.h)-1 and self.h[c].suit() == self.h[c+1].suit() and (self.h[c].value() == self.h[c+1].value()-1 or self.h[c].value() == 13 and self.h[c+1].value() == 1):
                 c += 1
                 run.add(self.h[c])
-                if self.h[c].value() == 13 and self.h[c+1].value() == 1:
+                if c < len(self.h)-1 and self.h[c].value() == 13 and self.h[c+1].value() == 1:
                     break
             if len(run) >= 3:
                 runs.append(run)
@@ -340,7 +397,7 @@ class Card:
         self.v = v
         self.s = s
         self.c = CARD_TYPES[self.v] + CARD_SUITS[self.s]
-        self.sort = 0
+        self.sort = 1
 
     def draw(self, win, resources, x, y):
         resources.draw_card(win, self.c, x, y)

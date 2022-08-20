@@ -76,10 +76,10 @@ class Network:
             print(e)
             return False
 
-    def send(self, game):
+    def send(self, game, p):
         try:
             if game is None:
-                self.client.sendall(END)
+                send_packet(self.client, NEW_GAME)
                 return recv_initial_game(self.client)
             elif game.update:
                 game.update = False
@@ -88,13 +88,20 @@ class Network:
             else:
                 send_packet(self.client, None)
             packet = recv_packet(self.client)
-            if packet == 0:
+            if packet == RESET:
                 return recv_initial_game(self.client), True
-            elif packet.disconnected:
-                return None, False
-            else:
-                map_to_game(packet, game)
+            elif packet == GAME_OVER:
+                send_packet(self.client, game.get_player(p))
+                player = recv_player(self.client)
+                game.set_opponent(player, p)
                 return game, False
+            elif type(packet) == Packet:
+                if packet.disconnected:
+                    return None, False
+                else:
+                    map_to_game(packet, game)
+                    return game, False
+            return game, False
         except Exception as e:
             print(e)
             return None, False
@@ -112,7 +119,11 @@ class Resources:
             elif "backgrounds" in filename:
                 key = int(filename.replace("assets/backgrounds/", "").replace(".png", ""))
                 self.backgrounds[key] = pygame.image.load(filename)
-        self.icon = pygame.image.load("icon.png")
+            elif "ui" in filename:
+                if "icon" in filename:
+                    self.icon = pygame.image.load(filename)
+                if "arrow" in filename:
+                    self.arrow = pygame.transform.rotate(pygame.transform.scale(pygame.image.load(filename), (ARROW_SIZE, ARROW_SIZE)), 90)
 
     def draw_card(self, win, key, x, y):
         image = self.cards[key]
@@ -124,6 +135,10 @@ class Resources:
 
     def draw_background_select(self, win, key, pos):
         image = pygame.transform.scale(self.backgrounds[key], (IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT))
+        win.blit(image, pos)
+
+    def draw_arrow(self, win, pos, orientation):
+        image = pygame.transform.rotate(self.arrow, 180 if orientation == 0 else 0)
         win.blit(image, pos)
 
 
@@ -235,9 +250,8 @@ def event_loop():
 
 
 def main(win, resources, usersettings, n, p):
-    game = n.send(None)
+    game = n.send(None, p)
     menu = None
-    clock = pygame.time.Clock()
 
     count = 0
     connected = False
@@ -250,7 +264,7 @@ def main(win, resources, usersettings, n, p):
                 if not menu.active:
                     game.draw(win, resources, usersettings, p, pos, clicked, count)
                 menu.draw(win, resources, clicked, pos)
-                game, reset = n.send(game)
+                game, reset = n.send(game, p)
                 if game is None:
                     return startup()
                 if reset:
@@ -261,7 +275,7 @@ def main(win, resources, usersettings, n, p):
                 if connected:
                     menu = Menu(usersettings, True)
             count += 1
-            clock.tick(FPS)
+            tick()
             pygame.display.update()
         except pygame.error or socket.error:
             break
@@ -269,7 +283,6 @@ def main(win, resources, usersettings, n, p):
 
 
 def draw_menu(win, resources, usersettings, n, p):
-    clock = pygame.time.Clock()
     menu = Menu(usersettings)
 
     active = True
@@ -281,7 +294,7 @@ def draw_menu(win, resources, usersettings, n, p):
         if menu.start:
             return main(win, resources, usersettings, n, p)
         n.wait()
-        clock.tick(FPS)
+        tick()
         pygame.display.update()
     pygame.quit()
 

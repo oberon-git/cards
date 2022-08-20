@@ -7,11 +7,13 @@ from shared import *
 file_list = []
 for card in CARD_TYPES.values():
     for suit in CARD_SUITS.values():
-        file_list.append("assets/cards/" + card + "_of_" + suit + ".png")
+        file_list.append(CARD_ROUTE + card + "_of_" + suit + CARD_EXTENSION)
 for back in CARD_BACKS:
-    file_list.append("assets/cards/" + back + ".png")
+    file_list.append(CARD_ROUTE + back + CARD_EXTENSION)
 for i in range(1, BACKGROUND_COUNT + 1):
-    file_list.append("assets/backgrounds/" + ("0" if i < 10 else "") + str(i) + ".png")
+    file_list.append(BACKGROUND_ROUTE + ("0" if i < 10 else "") + str(i) + BACKGROUND_EXTENSION)
+for ui_element in UI_ELEMENTS:
+    file_list.append(UI_ROUTE + ui_element + UI_EXTENSION)
 
 
 class Connection:
@@ -20,11 +22,18 @@ class Connection:
         self.ready = False
         self.closed = False
         self.reset = False
+        self.over = False
+        self.hand_sent = False
 
     def close(self):
         self.conn.close()
         self.ready = False
         self.closed = True
+
+    def start_new_game(self):
+        self.reset = False
+        self.over = False
+        self.hand_sent = False
 
 
 def send_images(conn):
@@ -63,26 +72,41 @@ def client(conns, game, p):
                 if conns[x].closed or conns[y].closed:
                     break
                 data = recv_packet(conns[x].conn)
-                if conns[y].reset:
-                    send_packet(conns[y].conn, 0)
+                if data == RESET:
+                    send_initial_game(conns[x].conn, game)
+                    conns[x].start_new_game()
+                elif conns[y].reset:
+                    send_packet(conns[y].conn, RESET)
                     send_initial_game(conns[y].conn, game)
-                    conns[y].reset = False
+                    conns[y].start_new_game()
+                elif data == GAME_OVER:
+                    send_player(conns[x].conn, game.get_player(p))
+                elif conns[y].over and not conns[y].hand_sent:
+                    send_packet(conns[y].conn, GAME_OVER)
+                    conns[y].hand_sent = True
+                elif type(data) == Player:
+                    game.set_player(data, p)
+                    send_player(conns[y].conn, game.get_player(p))
                 elif type(data) == Packet:
                     if data.reset:
                         game.reshuffle()
-                        send_packet(conns[y].conn, 0)
+                        send_packet(conns[y].conn, RESET)
                         send_initial_game(conns[y].conn, game)
                         conns[x].reset = True
+                        conns[y].start_new_game()
                     else:
                         map_to_game(data, game)
                         packet = Packet(game)
                         send_packet(conns[y].conn, packet)
+                        if game.over:
+                            conns[x].over = True
+                            conns[y].over = True
                 elif data is None:
                     packet = Packet(game)
                     send_packet(conns[y].conn, packet)
             elif not connected:
-                data = conns[x].conn.recv(512)
-                if data == END:
+                data = recv_packet(conns[x].conn)
+                if data == NEW_GAME:
                     send_initial_game(conns[x].conn, game)
                     conns[x].ready = True
                 else:
@@ -90,6 +114,7 @@ def client(conns, game, p):
                     if len(conns) == 2 and conns[x].ready and conns[y].ready:
                         connected = packet.connected = True
                     send_packet(conns[x].conn, packet)
+            tick()
         except Exception as e:
             print(e)
             break

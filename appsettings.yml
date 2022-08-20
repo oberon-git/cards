@@ -1,8 +1,8 @@
-local: false
+local: true
 window:
   width: 750
   height: 750
-  fps: 30
+  fps: 60
 buttons:
   classic:
     width: 300
@@ -14,6 +14,8 @@ games:
   1: Rummy
 backgrounds:
   count: 12
+  route: assets/backgrounds/
+  extension: .png
 cards:
   types:
     1: ace
@@ -38,5 +40,14 @@ cards:
   width: 69
   height: 94
   spacing: 20
+  route: assets/cards/
+  extension: .png
+ui:
+  elements: [icon, arrow]
+  arrow_size: 25
+  route: assets/ui/
+  extension: .png
+animation:
+  blink_speed: 24
 
 
