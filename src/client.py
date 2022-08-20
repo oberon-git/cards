@@ -8,6 +8,10 @@ class UserSettings:
         with open("../usersettings.yml", 'r') as user_file:
             self.settings = yaml.safe_load(user_file)
         self.background = self.settings["background"]
+        self.game = self.settings["game"]
+
+    def get_game_name(self):
+        return GAMES[self.game]
 
     def update_background(self, background):
         self.settings["background"] = background
@@ -102,6 +106,33 @@ class Network:
             return None, False
 
 
+class Resources:
+    def __init__(self, file_list):
+        self.cards = {}
+        self.backgrounds = {}
+        self.ui = {}
+        for filename in file_list:
+            if "cards" in filename:
+                key = filename.replace("assets/cards/", "").replace("_of_", "").replace(".png", "")
+                self.cards[key] = pygame.image.load(filename)
+            elif "backgrounds" in filename:
+                key = int(filename.replace("assets/backgrounds/", "").replace(".png", ""))
+                self.backgrounds[key] = pygame.image.load(filename)
+        self.icon = pygame.image.load("icon.png")
+
+    def draw_card(self, win, key, x, y):
+        image = self.cards[key]
+        win.blit(image, (x, y))
+
+    def draw_background(self, win, key):
+        image = pygame.transform.scale(self.backgrounds[key], (WIN_WIDTH, WIN_HEIGHT))
+        win.blit(image, (0, 0))
+
+    def draw_background_select(self, win, key, pos):
+        image = pygame.transform.scale(self.backgrounds[key], (IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT))
+        win.blit(image, pos)
+
+
 class Menu:
     def __init__(self, settings, paused=False):
         self.settings = settings
@@ -173,6 +204,18 @@ class Menu:
             self.active = False
             self.screen = 2
 
+    def escape(self, escaped):
+        if escaped:
+            if self.screen == 0:
+                return False
+            elif self.screen == 1:
+                self.back()
+            elif self.screen == 2:
+                self.pause()
+            elif self.screen == 3:
+                self.play()
+        return True
+
 
 def waiting(win, x):
     win.fill(WHITE)
@@ -185,13 +228,16 @@ def waiting(win, x):
 
 def event_loop():
     active = True
-    clicked = False
+    clicked = escaped = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             active = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             clicked = True
-    return active, clicked, pygame.mouse.get_pos()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                escaped = True
+    return active, clicked, escaped, pygame.mouse.get_pos()
 
 
 def main(win, resources, usersettings, n, p):
@@ -204,8 +250,9 @@ def main(win, resources, usersettings, n, p):
     active = True
     while active:
         try:
-            active, clicked, pos = event_loop()
+            active, clicked, escaped, pos = event_loop()
             if connected:
+                menu.escape(escaped)
                 if not menu.active:
                     game.draw(win, resources, usersettings, p, pos, clicked, count)
                 menu.draw(win, resources, clicked, pos)
@@ -233,7 +280,9 @@ def draw_menu(win, resources, usersettings, n, p):
 
     active = True
     while active:
-        active, clicked, pos = event_loop()
+        active, clicked, escaped, pos = event_loop()
+        if active:
+            active = menu.escape(escaped)
         menu.draw(win, resources, clicked, pos)
         if menu.start:
             return main(win, resources, usersettings, n, p)
@@ -243,14 +292,21 @@ def draw_menu(win, resources, usersettings, n, p):
     pygame.quit()
 
 
+def setup_win(settings, resources):
+    win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    pygame.display.set_caption(settings.get_game_name())
+    pygame.display.set_icon(resources.icon)
+    return win
+
+
 def startup():
     n = Network()
     p, card_list = n.connect()
     resources = Resources(card_list)
     usersettings = UserSettings()
-    pygame.init()
-    win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    win = setup_win(usersettings, resources)
     draw_menu(win, resources, usersettings, n, p)
 
 
-startup()
+if __name__ == "__main__":
+    startup()

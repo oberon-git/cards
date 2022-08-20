@@ -1,4 +1,4 @@
-local: true
+local: false
 window:
   width: 750
   height: 750
@@ -10,6 +10,8 @@ buttons:
   images:
     width: 100
     height: 100
+games:
+  1: Rummy
 backgrounds:
   count: 12
 cards:

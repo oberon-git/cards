@@ -15,6 +15,7 @@ BUTTON_WIDTH = appsettings["buttons"]["classic"]["width"]
 BUTTON_HEIGHT = appsettings["buttons"]["classic"]["height"]
 IMAGE_BUTTON_WIDTH = appsettings["buttons"]["images"]["width"]
 IMAGE_BUTTON_HEIGHT = appsettings["buttons"]["images"]["height"]
+GAMES = appsettings["games"]
 BACKGROUND_COUNT = appsettings["backgrounds"]["count"]
 CARD_TYPES = appsettings["cards"]["types"]
 CARD_SUITS = appsettings["cards"]["suits"]
@@ -451,29 +452,3 @@ class Button:
                 self.click()
         elif self.selected:
             self.outline(win)
-
-
-class Resources:
-    def __init__(self, file_list):
-        self.cards = {}
-        self.backgrounds = {}
-        self.ui = {}
-        for filename in file_list:
-            if "cards" in filename:
-                key = filename.replace("assets/cards/", "").replace("_of_", "").replace(".png", "")
-                self.cards[key] = pygame.image.load(filename)
-            elif "backgrounds" in filename:
-                key = int(filename.replace("assets/backgrounds/", "").replace(".png", ""))
-                self.backgrounds[key] = pygame.image.load(filename)
-
-    def draw_card(self, win, key, x, y):
-        image = self.cards[key]
-        win.blit(image, (x, y))
-
-    def draw_background(self, win, key):
-        image = pygame.transform.scale(self.backgrounds[key], (WIN_WIDTH, WIN_HEIGHT))
-        win.blit(image, (0, 0))
-
-    def draw_background_select(self, win, key, pos):
-        image = pygame.transform.scale(self.backgrounds[key], (IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT))
-        win.blit(image, pos)
