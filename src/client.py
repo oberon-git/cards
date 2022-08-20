@@ -158,11 +158,11 @@ class Menu:
 
     def get_button_rect(self, x):
         offset = -75 * (self.n - x)
-        return WIN_WIDTH // 2 - BUTTON_WIDTH // 2, WIN_HEIGHT // 2 + offset - BUTTON_HEIGHT // 2
+        return CENTER[0] - BUTTON_WIDTH // 2, CENTER[1] + offset - BUTTON_HEIGHT // 2
 
     def draw(self, win, resources, clicked, mouse_pos):
         if self.screen != 2:
-            win.fill(WHITE)
+            resources.draw_background(win, self.settings.background)
         if self.screen == 0:
             self.play_button.draw(win, mouse_pos, clicked, resources)
             self.background_select_button.draw(win, mouse_pos, clicked, resources)
@@ -228,10 +228,9 @@ class Menu:
 
 def waiting(win, x):
     win.fill(WHITE)
-    font = pygame.font.SysFont("Times", 30)
-    rect = font.render("Waiting For Opponent.", True, BLACK).get_rect()
-    rect.center = (WIN_WIDTH // 2, WIN_HEIGHT // 2)
-    text = font.render("Waiting For Opponent" + "." * x, True, BLACK)
+    rect = FONT.render("Waiting For Opponent.", True, BLACK).get_rect()
+    rect.center = CENTER
+    text = FONT.render("Waiting For Opponent." + "." * x, True, BLACK)
     win.blit(text, rect)
 
 
@@ -271,7 +270,7 @@ def main(win, resources, usersettings, n, p):
                     p = 0 if p == 1 else 1
             else:
                 connected = n.wait()
-                waiting(win, ((count // 24) % 3) + 1)
+                waiting(win, ((count // BLINK_SPEED) % 3))
                 if connected:
                     menu = Menu(usersettings, True)
             count += 1

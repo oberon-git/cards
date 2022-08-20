@@ -4,19 +4,21 @@ import _pickle as pickle
 from random import shuffle
 
 pygame.init()
-clock = pygame.time.Clock()
 
 with open("../appsettings.yml", 'r') as app_file:
     appsettings = yaml.safe_load(app_file)
 
 WIN_WIDTH = appsettings["window"]["width"]
 WIN_HEIGHT = appsettings["window"]["width"]
+CENTER = (WIN_WIDTH // 2, WIN_HEIGHT // 2)
 FPS = appsettings["window"]["fps"]
 BUTTON_WIDTH = appsettings["buttons"]["classic"]["width"]
 BUTTON_HEIGHT = appsettings["buttons"]["classic"]["height"]
 IMAGE_BUTTON_WIDTH = appsettings["buttons"]["images"]["width"]
 IMAGE_BUTTON_HEIGHT = appsettings["buttons"]["images"]["height"]
 GAMES = appsettings["games"]
+FONT_FAMILY = appsettings["font"]["family"]
+FONT_SIZE = appsettings["font"]["size"]
 BACKGROUND_COUNT = appsettings["backgrounds"]["count"]
 BACKGROUND_ROUTE = appsettings["backgrounds"]["route"]
 BACKGROUND_EXTENSION = appsettings["backgrounds"]["extension"]
@@ -51,9 +53,12 @@ BACKGROUND = (100, 100, 100)
 BUTTON = (200, 200, 200)
 OUTLINE = (255, 255, 0)
 
+CLOCK = pygame.time.Clock()
+FONT = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)
+
 
 def tick():
-    clock.tick(FPS)
+    CLOCK.tick(FPS)
 
 
 def send_str(conn, s):
@@ -118,8 +123,8 @@ def outline_card(win, x, y):
 
 
 def draw_center_lines(win):
-    pygame.draw.line(win, BLACK, (0, WIN_HEIGHT // 2), (WIN_WIDTH, WIN_HEIGHT // 2))
-    pygame.draw.line(win, BLACK, (WIN_WIDTH // 2, 0), (WIN_WIDTH // 2, WIN_HEIGHT))
+    pygame.draw.line(win, BLACK, (0, CENTER[1]), (WIN_WIDTH, CENTER[1]))
+    pygame.draw.line(win, BLACK, (CENTER[0], 0), (CENTER[0], WIN_HEIGHT))
 
 
 def map_to_game(packet, game):
@@ -164,7 +169,7 @@ class Game:
         self.winner = -1
         self.over = self.reset = self.update = self.show_opponents_hand = False
         self.back = "castle_back_01"
-        self.play_again_button = Button((WIN_WIDTH // 2 - BUTTON_WIDTH // 2, WIN_HEIGHT // 2 + 100), "Play Again", self.play_again)
+        self.play_again_button = Button((CENTER[0] - BUTTON_WIDTH // 2, CENTER[1] + 100), "Play Again", self.play_again)
 
     def reshuffle(self):
         self.deck = Deck()
@@ -214,8 +219,8 @@ class Game:
             for i in range(n):
                 resources.draw_card(win, self.back, i * mult + offset, 30)
 
-        x = WIN_WIDTH // 2 - CARD_WIDTH // 2 - mult // 2
-        y = WIN_HEIGHT // 2 - CARD_HEIGHT // 2
+        x = CENTER[0] - CARD_WIDTH // 2 - mult // 2
+        y = CENTER[1] - CARD_HEIGHT // 2
         resources.draw_card(win, self.back, x, y)
         if self.turn == p and self.step == 0 and not self.over and card_selected(x, y, mouse_pos):
             outline_card(win, x, y)
@@ -234,9 +239,9 @@ class Game:
     def draw_pointer(self, win, resources, count, p):
         if (count // BLINK_SPEED) % 2 == 0:
             if p == self.turn:
-                resources.draw_arrow(win, (WIN_WIDTH // 2 - ARROW_SIZE // 2, WIN_HEIGHT - 150 - ARROW_SIZE), 0)
+                resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, WIN_HEIGHT - 150 - ARROW_SIZE), 0)
             else:
-                resources.draw_arrow(win, (WIN_WIDTH // 2 - ARROW_SIZE // 2, 150), 1)
+                resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, 150), 1)
 
     def play_again(self):
         self.reset = True
@@ -254,13 +259,12 @@ class Game:
         self.players[p] = player
 
     def draw_winner(self, win, p):
-        font = pygame.font.SysFont("Times", 30)
         if self.winner == p:
-            text = font.render("You Won!", True, WHITE)
+            text = FONT.render("You Won!", True, WHITE)
         else:
-            text = font.render("You Lost!", True, WHITE)
+            text = FONT.render("You Lost!", True, WHITE)
         rect = text.get_rect()
-        rect.center = (WIN_WIDTH // 2, WIN_HEIGHT // 2 - 100)
+        rect.center = (CENTER[0], CENTER[1] - 100)
         win.blit(text, rect)
 
     def draw_card_from_deck(self, p):
@@ -459,8 +463,7 @@ class Button:
         if type(content) == str:
             self.type = 0
             self.rect = (pos[0], pos[1], BUTTON_WIDTH, BUTTON_HEIGHT)
-            self.font = pygame.font.SysFont("Times", 30)
-            self.text = self.font.render(content, False, BLACK)
+            self.text = FONT.render(content, False, BLACK)
             self.font_rect = self.text.get_rect()
             self.font_rect.center = (pos[0] + BUTTON_WIDTH // 2, pos[1] + BUTTON_HEIGHT // 2)
         if type(content) == int:

@@ -10,6 +10,9 @@ buttons:
   images:
     width: 100
     height: 100
+font:
+  family: Times
+  size: 30
 games:
   1: Rummy
 backgrounds:
