@@ -80,7 +80,9 @@ def client(conns, game, p):
                     send_initial_game(conns[y].conn, game)
                     conns[y].start_new_game()
                 elif data == GAME_OVER:
-                    send_player(conns[x].conn, game.get_player(p))
+                    send_packet(conns[y].conn, GAME_OVER)
+                    player = recv_player(conns[y].conn, player)
+                    send_player(conns[x].conn, player)
                 elif conns[y].over and not conns[y].hand_sent:
                     send_packet(conns[y].conn, GAME_OVER)
                     conns[y].hand_sent = True
