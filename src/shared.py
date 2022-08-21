@@ -82,7 +82,7 @@ def send_player(conn, player):
 
 def recv_player(conn):
     player = recv_packet(conn)
-    if player is None or type(player) == Packet:
+    if player is None or type(player) != Player:
         send_packet(conn, GAME_OVER)
         return recv_player(conn)
     return player
@@ -99,7 +99,7 @@ def send_initial_game(conn, game):
 def recv_initial_game(conn):
     try:
         deck = recv_packet(conn)
-        if deck is None or type(deck) == Packet:
+        if deck is None or type(deck) != Deck:
             send_packet(conn, RESET)
             return recv_initial_game(conn)
         players = recv_packet(conn)
@@ -124,9 +124,9 @@ def card_selected(x, y, pos):
     return False
 
 
-def outline_card(win, x, y):
+def outline_card(win, x, y, color=OUTLINE):
     rect = (x - OUTLINE_WIDTH, y - OUTLINE_WIDTH, CARD_WIDTH + OUTLINE_WIDTH, CARD_HEIGHT + OUTLINE_WIDTH)
-    pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
+    pygame.draw.rect(win, color, rect, width=OUTLINE_WIDTH)
 
 
 def draw_center_lines(win):
@@ -171,6 +171,7 @@ class Game:
             self.players = players
         self.top = self.deck.deal_card()
         self.bottom = None
+        self.new_card_index = -1
         self.turn = 0
         self.step = 0
         self.winner = -1
@@ -209,6 +210,9 @@ class Game:
                 outline_card(win, x, y)
                 if clicked:
                     to_discard = (True, p, c)
+            elif self.turn == p and self.step == 1 and not self.over and self.new_card_index == i:
+                if (count // BLINK_SPEED) % 2 == 0:
+                    outline_card(win, x, y, BLACK)
         if to_discard[0]:
             self.discard_card(to_discard[1], to_discard[2])
 
@@ -275,12 +279,12 @@ class Game:
         win.blit(text, rect)
 
     def draw_card_from_deck(self, p):
-        self.players[p].draw_card(self.deck.deal_card())
+        self.new_card_index = self.players[p].draw_card(self.deck.deal_card())
         self.step = 1
         self.update = True
 
     def draw_top_card(self, p):
-        self.players[p].draw_card(self.top)
+        self.new_card_index = self.players[p].draw_card(self.top)
         self.top = self.bottom
         self.bottom = None
         self.step = 1
@@ -334,6 +338,7 @@ class Player:
     def draw_card(self, c):
         self.h.append(c)
         self.h.sort()
+        return self.h.find(c)
 
     def hand(self):
         return self.h
