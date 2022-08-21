@@ -1,4 +1,4 @@
-local: true
+local: false
 window:
   width: 750
   height: 750
