@@ -53,9 +53,9 @@ def send_images(conn):
                         conn.sendall(buff)
                     data = recv_str(conn)
                     if data != "received":
-                        print("Failed To Load Assets")
+                        log("Failed To Load Assets")
                         return
-    print("Images Sent")
+    log("Images Sent")
 
 
 def client(conns, game, p):
@@ -116,7 +116,7 @@ def client(conns, game, p):
                     send_packet(conns[x].conn, packet)
             tick()
         except Exception as e:
-            print(e)
+            log(e)
             break
     if len(conns) == 2 and not conns[y].closed:
         packet = Packet(game)
@@ -134,7 +134,7 @@ def main():
             break
         except OSError:
             pass
-    print("Listening for Connections")
+    log("Listening for Connections", True)
 
     connections = []
     games = []
@@ -143,7 +143,7 @@ def main():
     while True:
         try:
             conn, addr = s.accept()
-            print("Connected to", addr[0])
+            log("Connected to " + addr[0], True)
             connection = Connection(conn)
             if len(connections) == 0:
                 connections.append(connection)
@@ -162,7 +162,7 @@ def main():
                 connections = []
                 g += 1
         except Exception as e:
-            print(e)
+            log(e)
 
 
 main()

@@ -31,11 +31,11 @@ class Network:
 
     def connect(self):
         try:
-            print("Trying To Connect To", HOST)
+            log("Trying To Connect To", HOST)
             self.client.connect(ADDR)
             p = int(recv_str(self.client))
             send_str(self.client, "received")
-            print("Connected")
+            log("Connected")
             card_list = []
             n = int(recv_str(self.client))
             send_str(self.client, "received")
@@ -44,18 +44,18 @@ class Network:
                 card_list.append(filename)
                 if not os.path.exists(filename):
                     send_str(self.client, "send")
-                    # print("Receiving", filename)
+                    log("Receiving", filename)
                     with open(filename, 'wb') as file:
                         data = self.recv_image()
                         file.write(data)
-                    # print(filename, "Received")
+                    log(filename, "Received")
                     send_str(self.client, "received")
                 else:
                     send_str(self.client, "skip")
-            print("Images Received")
+            log("Images Received")
             return p, card_list
         except Exception as e:
-            print(e)
+            log(e)
 
     def recv_image(self):
         data = b''
@@ -73,7 +73,7 @@ class Network:
             packet = recv_packet(self.client)
             return packet.connected
         except Exception as e:
-            print(e)
+            log(e)
             return False
 
     def send(self, game, p):
@@ -103,7 +103,7 @@ class Network:
                     return game, False
             return game, False
         except Exception as e:
-            print(e)
+            log(e)
             return None, False
 
 
@@ -188,7 +188,7 @@ class Menu:
         row_offset = IMAGE_BUTTON_HEIGHT + spacing
         pos = (spacing, spacing)
         col = 0
-        print(BACKGROUND_COUNT)
+        log(BACKGROUND_COUNT)
         for i in range(1, BACKGROUND_COUNT + 1):
             selected = i == self.settings.background
             self.background_selects[i] = (Button(pos, i, self.select_background, selected))
@@ -312,6 +312,8 @@ def setup_dir():
         os.mkdir("assets/cards")
     if not os.path.exists("assets/backgrounds"):
         os.mkdir("assets/backgrounds")
+    if not os.path.exists("assets/ui"):
+        os.mkdir("assets/ui")
     if not os.path.exists("../usersettings.yml"):
         default_settings = {"background": 1, "game": 1}
         with open("../usersettings.yml", 'w') as user_file:

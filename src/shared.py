@@ -8,6 +8,8 @@ pygame.init()
 with open("../appsettings.yml", 'r') as app_file:
     appsettings = yaml.safe_load(app_file)
 
+LOCAL = appsettings["local"]
+DEBUG = appsettings["debug"]
 WIN_WIDTH = appsettings["window"]["width"]
 WIN_HEIGHT = appsettings["window"]["width"]
 CENTER = (WIN_WIDTH // 2, WIN_HEIGHT // 2)
@@ -37,7 +39,7 @@ ARROW_SIZE = appsettings["ui"]["arrow_size"]
 BLINK_SPEED = appsettings["animation"]["blink_speed"]
 OUTLINE_WIDTH = 3
 HOST = "173.230.150.237"
-if appsettings["local"]:
+if LOCAL:
     HOST = "localhost"
 PORT = 13058
 ADDR = (HOST, PORT)
@@ -55,6 +57,11 @@ OUTLINE = (255, 255, 0)
 
 CLOCK = pygame.time.Clock()
 FONT = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)
+
+
+def log(message, always=False):
+    if DEBUG or always:
+        print(message)
 
 
 def tick():
@@ -86,7 +93,7 @@ def send_initial_game(conn, game):
         send_packet(conn, game.deck)
         send_packet(conn, game.players)
     except Exception as e:
-        print(e)
+        log(e)
 
 
 def recv_initial_game(conn):
@@ -98,7 +105,7 @@ def recv_initial_game(conn):
         players = recv_packet(conn)
         return Game(deck, players)
     except Exception as e:
-        print(e)
+        log(e)
 
 
 def send_packet(conn, packet):
