@@ -82,7 +82,7 @@ def send_player(conn, player):
 
 def recv_player(conn):
     player = recv_packet(conn)
-    if type(player) == Packet:
+    if player is None or type(player) == Packet:
         send_packet(conn, GAME_OVER)
         return recv_player(conn)
     return player
@@ -99,7 +99,7 @@ def send_initial_game(conn, game):
 def recv_initial_game(conn):
     try:
         deck = recv_packet(conn)
-        if type(deck) == Packet:
+        if deck is None or type(deck) == Packet:
             send_packet(conn, RESET)
             return recv_initial_game(conn)
         players = recv_packet(conn)
