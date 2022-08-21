@@ -52,6 +52,6 @@ ui:
   route: assets/ui/
   extension: .png
 animation:
-  blink_speed: 24
+  blink_speed: 20
 
 
