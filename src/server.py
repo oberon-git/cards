@@ -102,8 +102,7 @@ def client(conns, game, p):
                             conns[x].over = True
                             conns[y].over = True
                 elif data is None:
-                    packet = Packet(game)
-                    send_packet(conns[y].conn, packet)
+                    send_packet(conns[y].conn, None)
             elif not connected:
                 data = recv_packet(conns[x].conn)
                 if data == NEW_GAME:
