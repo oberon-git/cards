@@ -196,7 +196,7 @@ class Game:
             self.draw_winner(win, p)
             self.play_again_button.draw(win, mouse_pos, clicked, resources)
         else:
-            self.draw_pointer(win, resources, count, p)
+            self.draw_pointer(win, resources, p)
         mult = CARD_WIDTH + CARD_SPACING
         offset = (WIN_WIDTH - (len(self.players[p].hand()) * mult) + CARD_SPACING) // 2
         hand = self.players[p].hand()
@@ -247,12 +247,11 @@ class Game:
                 if clicked:
                     self.draw_top_card(p)
 
-    def draw_pointer(self, win, resources, count, p):
-        if (count // BLINK_SPEED) % 2 == 0:
-            if p == self.turn:
-                resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, WIN_HEIGHT - 150 - ARROW_SIZE), 0)
-            else:
-                resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, 150), 1)
+    def draw_pointer(self, win, resources, p):
+        if p == self.turn:
+            resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, WIN_HEIGHT - 150 - ARROW_SIZE), 0)
+        else:
+            resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, 150), 1)
 
     def play_again(self):
         self.reset = True
