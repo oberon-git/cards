@@ -338,7 +338,7 @@ class Player:
     def draw_card(self, c):
         self.h.append(c)
         self.h.sort()
-        return self.h.find(c)
+        return self.h.index(c)
 
     def hand(self):
         return self.h
