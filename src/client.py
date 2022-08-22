@@ -31,7 +31,7 @@ class Network:
 
     def connect(self):
         try:
-            log("Trying To Connect To", HOST)
+            log("Trying To Connect To " + HOST)
             self.client.connect(ADDR)
             p = int(recv_str(self.client))
             send_str(self.client, "received")
@@ -44,11 +44,11 @@ class Network:
                 card_list.append(filename)
                 if not os.path.exists(filename):
                     send_str(self.client, "send")
-                    log("Receiving", filename)
+                    log("Receiving " + filename)
                     with open(filename, 'wb') as file:
                         data = self.recv_image()
                         file.write(data)
-                    log(filename, "Received")
+                    log(filename + " Received")
                     send_str(self.client, "received")
                 else:
                     send_str(self.client, "skip")
