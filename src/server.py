@@ -194,4 +194,5 @@ def main():
             log(e)
 
 
-main()
+if __name__ == "__main__":
+    main()

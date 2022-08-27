@@ -76,6 +76,14 @@ class Network:
             log(e)
             return False
 
+    def play(self):
+        try:
+            send_packet(self.client, PLAY)
+            recv_packet(self.client)
+        except Exception as e:
+            log(e)
+            return False
+
     def send(self, game, p, skip_send=False):
         try:
             if not skip_send:

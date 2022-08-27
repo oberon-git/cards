@@ -47,6 +47,7 @@ END = str.encode("EOF")
 RESET = 0
 GAME_OVER = 1
 NEW_GAME = 2
+PLAY = 3
 
 # Color
 WHITE = (255, 255, 255)
