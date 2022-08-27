@@ -1,6 +1,7 @@
 import socket
 from _thread import start_new_thread
 from random import randint
+from collections import deque
 from shared import *
 
 
@@ -79,15 +80,12 @@ def client(conns, game, p):
                     send_packet(conns[y].conn, RESET)
                     send_initial_game(conns[y].conn, game)
                     conns[y].start_new_game()
-                elif data == GAME_OVER:
-                    player = game.get_player(0 if p == 1 else 1)
-                    send_player(conns[x].conn, player)
-                elif conns[y].over and not conns[y].hand_sent:
-                    send_packet(conns[y].conn, GAME_OVER)
-                    conns[y].hand_sent = True
                 elif type(data) == Player:
                     game.set_player(data, p)
-                    send_player(conns[y].conn, game.get_player(p))
+                    send_packet(conns[y].conn, game.get_player(p))
+                elif conns[y].over:
+                    send_packet(conns[y].conn, GAME_OVER)
+                    conns[y].over = False
                 elif type(data) == Packet:
                     if data.reset:
                         game.reshuffle()
@@ -96,10 +94,11 @@ def client(conns, game, p):
                         conns[x].reset = True
                         conns[y].start_new_game()
                     else:
+                        over = data.over and not game.over
                         map_to_game(data, game)
                         packet = Packet(game)
                         send_packet(conns[y].conn, packet)
-                        if game.over:
+                        if over:
                             conns[x].over = True
                             conns[y].over = True
                 elif data is None:

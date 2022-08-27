@@ -60,7 +60,7 @@ FONT = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)
 
 
 def log(message, always=False):
-    if DEBUG or always:
+    if DEBUG or LOCAL or always:
         print(message)
 
 
@@ -74,18 +74,6 @@ def send_str(conn, s):
 
 def recv_str(conn):
     return conn.recv(512).decode()
-
-
-def send_player(conn, player):
-    send_packet(conn, player)
-
-
-def recv_player(conn):
-    player = recv_packet(conn)
-    if player is None or type(player) != Player:
-        send_packet(conn, GAME_OVER)
-        return recv_player(conn)
-    return player
 
 
 def send_initial_game(conn, game):
@@ -297,6 +285,8 @@ class Game:
         self.bottom = self.top
         self.top = c
         self.step = 0
+        if DEBUG and self.turn == 1:
+            self.over = True
         self.turn = 0 if self.turn == 1 else 1
         self.update = True
 

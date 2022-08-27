@@ -92,15 +92,13 @@ class Network:
                 return recv_initial_game(self.client), True
             elif packet == GAME_OVER:
                 send_packet(self.client, game.get_player(p))
-                player = recv_player(self.client)
-                game.set_opponent(player, p)
-                return game, False
+            elif type(packet) == Player:
+                game.set_opponent(packet, p)
             elif type(packet) == Packet:
                 if packet.disconnected:
                     return None, False
                 else:
                     map_to_game(packet, game)
-                    return game, False
             return game, False
         except Exception as e:
             log(e)
@@ -278,7 +276,6 @@ def main(win, resources, usersettings, n, p):
             pygame.display.update()
         except pygame.error or socket.error:
             break
-    pygame.quit()
 
 
 def draw_menu(win, resources, usersettings, n, p):
@@ -295,7 +292,6 @@ def draw_menu(win, resources, usersettings, n, p):
         n.wait()
         tick()
         pygame.display.update()
-    pygame.quit()
 
 
 def setup_win(settings, resources):
@@ -332,3 +328,4 @@ def startup():
 
 if __name__ == "__main__":
     startup()
+    pygame.quit()
