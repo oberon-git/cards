@@ -76,22 +76,24 @@ class Network:
             log(e)
             return False
 
-    def send(self, game, p):
+    def send(self, game, p, skip_send=False):
         try:
-            if game is None:
-                send_packet(self.client, NEW_GAME)
-                return recv_initial_game(self.client)
-            elif game.update:
-                game.update = False
-                packet = Packet(game)
-                send_packet(self.client, packet)
-            else:
-                send_packet(self.client, None)
+            if not skip_send:
+                if game is None:
+                    send_packet(self.client, NEW_GAME)
+                    return recv_initial_game(self.client)
+                elif game.update:
+                    game.update = False
+                    packet = Packet(game)
+                    send_packet(self.client, packet)
+                else:
+                    send_packet(self.client, None)
             packet = recv_packet(self.client)
             if packet == RESET:
                 return recv_initial_game(self.client), True
             elif packet == GAME_OVER:
                 send_packet(self.client, game.get_player(p))
+                self.send(game, p, True)
             elif type(packet) == Player:
                 game.set_opponent(packet, p)
             elif type(packet) == Packet:

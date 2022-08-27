@@ -1,7 +1,6 @@
 import socket
 from _thread import start_new_thread
 from random import randint
-from collections import deque
 from shared import *
 
 
@@ -15,6 +14,37 @@ for i in range(1, BACKGROUND_COUNT + 1):
     file_list.append(BACKGROUND_ROUTE + ("0" if i < 10 else "") + str(i) + BACKGROUND_EXTENSION)
 for ui_element in UI_ELEMENTS:
     file_list.append(UI_ROUTE + ui_element + UI_EXTENSION)
+
+
+class Queue:
+    def __init__(self):
+        self.array = []
+        self.front = self.back = 0
+
+    def push(self, conn):
+        self.array.append(conn)
+        self.back += 1
+
+    def pop(self):
+        self.clean()
+        if self.back > self.front:
+            conn = self.array[self.front]
+            self.front += 1
+            return conn
+        return None
+
+    def clean(self):
+        temp = []
+        for e in range(self.front, self.back):
+            conn = self.array[e]
+            if not conn.closed:
+                temp.append(conn)
+        self.array = temp
+        self.front = 0
+        self.back = len(self.array)
+
+    def __len__(self):
+        return self.back - self.front
 
 
 class Connection:
