@@ -98,6 +98,7 @@ class Network:
                     send_packet(self.client, None)
             packet = recv_packet(self.client)
             if packet == RESET:
+                send_packet(self.client, RESET)
                 return recv_initial_game(self.client), True
             elif packet == GAME_OVER:
                 send_packet(self.client, game.get_player(p))

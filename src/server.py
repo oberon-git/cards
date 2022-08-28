@@ -104,18 +104,17 @@ def client(conns, game, p):
                     break
                 data = recv_packet(conns[x].conn)
                 if data == RESET:
+                    send_packet(conns[y].conn, None)
                     send_initial_game(conns[x].conn, game)
                     conns[x].start_new_game()
                 elif conns[y].reset:
                     send_packet(conns[y].conn, RESET)
-                    send_initial_game(conns[y].conn, game)
-                    conns[y].start_new_game()
-                elif type(data) == Player:
-                    game.set_player(data, p)
-                    send_packet(conns[y].conn, game.get_player(p))
                 elif conns[y].over:
                     send_packet(conns[y].conn, GAME_OVER)
                     conns[y].over = False
+                elif type(data) == Player:
+                    game.set_player(data, p)
+                    send_packet(conns[y].conn, game.get_player(p))
                 elif type(data) == Packet:
                     if data.reset:
                         game.reshuffle()
