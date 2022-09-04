@@ -78,23 +78,14 @@ def recv_str(conn):
 
 
 def send_initial_game(conn, game):
-    try:
-        send_packet(conn, game.deck)
-        send_packet(conn, game.players)
-    except Exception as e:
-        log(e)
+    send_packet(conn, game.deck)
+    send_packet(conn, game.players)
 
 
 def recv_initial_game(conn):
-    try:
-        deck = recv_packet(conn)
-        if deck is None or type(deck) != Deck:
-            send_packet(conn, RESET)
-            return recv_initial_game(conn)
-        players = recv_packet(conn)
-        return Game(deck, players)
-    except Exception as e:
-        log(e)
+    deck = recv_packet(conn)
+    players = recv_packet(conn)
+    return Game(deck, players)
 
 
 def send_packet(conn, packet):

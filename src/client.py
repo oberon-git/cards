@@ -71,6 +71,8 @@ class Network:
         try:
             send_packet(self.client, None)
             packet = recv_packet(self.client)
+            if packet is None:
+                return True
             return packet.connected
         except Exception as e:
             log(e)
