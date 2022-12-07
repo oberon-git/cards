@@ -3,19 +3,6 @@ from _thread import start_new_thread
 from random import randint
 from shared import *
 
-
-file_list = []
-for card in CARD_TYPES.values():
-    for suit in CARD_SUITS.values():
-        file_list.append(CARD_ROUTE + card + "_of_" + suit + CARD_EXTENSION)
-for back in CARD_BACKS:
-    file_list.append(CARD_ROUTE + back + CARD_EXTENSION)
-for i in range(1, BACKGROUND_COUNT + 1):
-    file_list.append(BACKGROUND_ROUTE + ("0" if i < 10 else "") + str(i) + BACKGROUND_EXTENSION)
-for ui_element in UI_ELEMENTS:
-    file_list.append(UI_ROUTE + ui_element + UI_EXTENSION)
-
-
 class Queue:
     def __init__(self):
         self.array = []
@@ -68,6 +55,9 @@ class Connection:
 
 
 def send_images(conn):
+    file_list = ['cards/' + f for f in os.listdir(CARDS_DIR)]
+    file_list += ['backgrounds/' + f for f in os.listdir(BACKGROUND_DIR)]
+    file_list += ['ui/' + f for f in os.listdir(UI_DIR)]
     send_str(conn, str(len(file_list)))
     data = recv_str(conn)
     if data == "received":
@@ -75,7 +65,7 @@ def send_images(conn):
             send_str(conn, filename)
             data = recv_str(conn)
             if data == "send":
-                with open(filename, 'rb') as image:
+                with open(os.path.abspath(ASSET_DIR + '/' + filename), 'rb') as image:
                     while True:
                         buff = image.readline(512)
                         if not buff:
@@ -94,8 +84,9 @@ def client(conns, game, p):
     y = 0 if len(conns) == 2 else 1
     send_str(conns[x].conn, str(p))
     data = recv_str(conns[x].conn)
-    if data == "received":
-        send_images(conns[x].conn)
+    if data != "received":
+        return
+        # send_images(conns[x].conn)
     connected = False
     while True:
         try:
@@ -162,6 +153,7 @@ def main():
             break
         except OSError:
             pass
+    log("The server's IP is", socket.gethostbyname(socket.gethostname()))
     log("Listening for Connections", True)
 
     connections = []

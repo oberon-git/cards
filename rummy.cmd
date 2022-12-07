@@ -1,5 +1,6 @@
 @echo off
 
+SETLOCAL
 cd /Repos/cards
 git pull
 cd src
@@ -14,4 +15,4 @@ cd src
         py client.py
     :@EndCatch
 :@EndCatch
-
+ENDLOCAL

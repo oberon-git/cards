@@ -1,4 +1,4 @@
-local: false
+local: true
 debug: true
 window:
   width: 750

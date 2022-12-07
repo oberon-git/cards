@@ -5,7 +5,7 @@ from shared import *
 
 class UserSettings:
     def __init__(self):
-        with open("../usersettings.yml", 'r') as user_file:
+        with open(USER_SETTINGS_PATH, 'r') as user_file:
             self.settings = yaml.safe_load(user_file)
         self.background = self.settings["background"]
         self.game = self.settings["game"]
@@ -19,9 +19,9 @@ class UserSettings:
         self.background = self.settings["background"]
 
     def update(self):
-        with open("../usersettings.yml", 'w') as user_file:
+        with open(USER_SETTINGS_PATH, 'w') as user_file:
             yaml.dump(self.settings, user_file)
-        with open("../usersettings.yml", 'r') as user_file:
+        with open(USER_SETTINGS_PATH, 'r') as user_file:
             self.settings = yaml.safe_load(user_file)
 
 
@@ -36,26 +36,32 @@ class Network:
             p = int(recv_str(self.client))
             send_str(self.client, "received")
             log("Connected")
-            card_list = []
-            n = int(recv_str(self.client))
-            send_str(self.client, "received")
-            for _ in range(n):
-                filename = self.client.recv(128).decode()
-                card_list.append(filename)
-                if not os.path.exists(filename):
-                    send_str(self.client, "send")
-                    log("Receiving " + filename)
-                    with open(filename, 'wb') as file:
-                        data = self.recv_image()
-                        file.write(data)
-                    log(filename + " Received")
-                    send_str(self.client, "received")
-                else:
-                    send_str(self.client, "skip")
-            log("Images Received")
-            return p, card_list
+            file_list = ['cards/' + f for f in os.listdir(CARDS_DIR)]
+            file_list += ['backgrounds/' + f for f in os.listdir(BACKGROUND_DIR)]
+            file_list += ['ui/' + f for f in os.listdir(UI_DIR)]
+            return p, file_list
         except Exception as e:
             log(e)
+
+    def recv_images(self):
+        card_list = []
+        n = int(recv_str(self.client))
+        send_str(self.client, "received")
+        for _ in range(n):
+            filename = self.client.recv(128).decode()
+            card_list.append(filename)
+            if not os.path.exists(ASSET_DIR + filename):
+                send_str(self.client, "send")
+                log("Receiving " + filename)
+                with open(os.path.abspath(ASSET_DIR + '/' +  filename), 'wb') as file:
+                    data = self.recv_image()
+                    file.write(data)
+                log(filename + " Received")
+                send_str(self.client, "received")
+            else:
+                send_str(self.client, "skip")
+        log("Images Received")
+        return card_list
 
     def recv_image(self):
         data = b''
@@ -124,17 +130,18 @@ class Resources:
         self.backgrounds = {}
         self.ui = {}
         for filename in file_list:
+            path = os.path.abspath(ASSET_DIR + '/' + filename)
             if "cards" in filename:
-                key = filename.replace("assets/cards/", "").replace("_of_", "").replace(".png", "")
-                self.cards[key] = pygame.image.load(filename)
+                key = filename.replace("cards/", "").replace("_of_", "").replace(".png", "")
+                self.cards[key] = pygame.image.load(path)
             elif "backgrounds" in filename:
-                key = int(filename.replace("assets/backgrounds/", "").replace(".png", ""))
-                self.backgrounds[key] = pygame.image.load(filename)
+                key = int(filename.replace("backgrounds/", "").replace(".png", ""))
+                self.backgrounds[key] = pygame.image.load(path)
             elif "ui" in filename:
                 if "icon" in filename:
-                    self.icon = pygame.image.load(filename)
+                    self.icon = pygame.image.load(path)
                 if "arrow" in filename:
-                    self.arrow = pygame.transform.rotate(pygame.transform.scale(pygame.image.load(filename), (ARROW_SIZE, ARROW_SIZE)), 90)
+                    self.arrow = pygame.transform.rotate(pygame.transform.scale(pygame.image.load(path), (ARROW_SIZE, ARROW_SIZE)), 90)
 
     def draw_card(self, win, key, x, y):
         image = self.cards[key]
@@ -315,17 +322,17 @@ def setup_win(settings, resources):
 
 
 def setup_dir():
-    if not os.path.exists("assets"):
-        os.mkdir("assets")
-    if not os.path.exists("assets/cards"):
-        os.mkdir("assets/cards")
-    if not os.path.exists("assets/backgrounds"):
-        os.mkdir("assets/backgrounds")
-    if not os.path.exists("assets/ui"):
-        os.mkdir("assets/ui")
-    if not os.path.exists("../usersettings.yml"):
+    if not os.path.exists(ASSET_DIR):
+        os.mkdir(ASSET_DIR)
+    if not os.path.exists(CARDS_DIR):
+        os.mkdir(CARDS_DIR)
+    if not os.path.exists(BACKGROUND_DIR):
+        os.mkdir(BACKGROUND_DIR)
+    if not os.path.exists(UI_DIR):
+        os.mkdir(UI_DIR)
+    if not os.path.exists(USER_SETTINGS_PATH):
         default_settings = {"background": 1, "game": 1}
-        with open("../usersettings.yml", 'w') as user_file:
+        with open(USER_SETTINGS_PATH, 'w') as user_file:
             yaml.dump(default_settings, user_file)
 
 

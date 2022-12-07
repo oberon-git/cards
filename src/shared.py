@@ -1,11 +1,20 @@
 import pygame
 import yaml
-import _pickle as pickle
+import pickle
 from random import shuffle
+import sys
+import os
 
 pygame.init()
 
-with open("../appsettings.yml", 'r') as app_file:
+WORKING_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSET_DIR = os.path.abspath(WORKING_DIR + "/../assets/")
+CARDS_DIR = os.path.abspath(ASSET_DIR + "/cards/")
+BACKGROUND_DIR = os.path.abspath(ASSET_DIR + "/backgrounds/")
+UI_DIR = os.path.abspath(ASSET_DIR + "/ui/")
+USER_SETTINGS_PATH = os.path.abspath(WORKING_DIR + "/../usersettings.yml")
+
+with open(os.path.abspath(WORKING_DIR + "/../appsettings.yml"), 'r') as app_file:
     appsettings = yaml.safe_load(app_file)
 
 LOCAL = appsettings["local"]
@@ -277,8 +286,6 @@ class Game:
         self.bottom = self.top
         self.top = c
         self.step = 0
-        if DEBUG and self.turn == 1:
-            self.over = True
         self.turn = 0 if self.turn == 1 else 1
         self.update = True
 
