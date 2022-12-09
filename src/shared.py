@@ -47,7 +47,7 @@ UI_EXTENSION = appsettings["ui"]["extension"]
 ARROW_SIZE = appsettings["ui"]["arrow_size"]
 BLINK_SPEED = appsettings["animation"]["blink_speed"]
 OUTLINE_WIDTH = 3
-HOST = "10.201.227.56"
+HOST = "45.33.32.168"
 if LOCAL:
     HOST = "localhost"
 PORT = 13058
