@@ -1,5 +1,5 @@
-local: true
-debug: true
+local: false
+debug: false
 window:
   width: 750
   height: 750
