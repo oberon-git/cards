@@ -8,7 +8,9 @@ class Menu:
         self.paused = paused
         self.n = 2
         self.play_button = Button(self.get_button_rect(1), "Continue" if self.paused else "Play", self.play)
-        self.background_select_button = Button(self.get_button_rect(2), "Select Background",
+        self.selected_game = settings.get_game_name()
+        self.game_select_button = Button(self.get_button_rect(2), self.selected_game, self.next_game)
+        self.background_select_button = Button(self.get_button_rect(3), "Select Background",
                                                self.select_background_action)
         self.back_button = Button((50, WIN_HEIGHT - BUTTON_HEIGHT - 50), "Back", self.back)
         self.pause_button = Button((WIN_WIDTH - 50, 20), None, self.pause)
@@ -26,6 +28,7 @@ class Menu:
             resources.draw_background(win, self.settings.background)
         if self.screen == 0:
             self.play_button.draw(win, mouse_pos, clicked, resources)
+            self.game_select_button.draw(win, mouse_pos, clicked, resources)
             self.background_select_button.draw(win, mouse_pos, clicked, resources)
         elif self.screen == 1:
             for key, select in self.background_selects.items():
@@ -63,6 +66,11 @@ class Menu:
         self.background_selects[self.settings.background].selected = False
         self.settings.update_background(key)
         self.background_selects[key].selected = True
+
+    def next_game(self):
+        self.settings.next_game()
+        self.selected_game = self.settings.get_game_name()
+        self.game_select_button.change_text(self.selected_game)
 
     def back(self):
         self.screen = 3 if self.paused else 0

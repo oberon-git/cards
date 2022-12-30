@@ -18,7 +18,7 @@ def outline_card(win, x, y, color=OUTLINE):
     pygame.draw.rect(win, color, rect, width=OUTLINE_WIDTH)
 
 
-class Game:
+class Rummy:
     def __init__(self, deck=None, players=None):
         self.n = 7
         if deck is None:

@@ -11,6 +11,13 @@ class UserSettings:
     def get_game_name(self):
         return GAMES[self.game]
 
+    def next_game(self):
+        self.game += 1
+        if self.game not in GAMES:
+            self.game = 1
+        self.settings["game"] = self.game
+        self.update()
+
     def update_background(self, background):
         self.settings["background"] = background
         self.update()

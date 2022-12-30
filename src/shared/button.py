@@ -63,3 +63,9 @@ class Button:
                 self.click()
         elif self.selected:
             self.outline(win)
+
+    def change_text(self, text):
+        assert self.type == 0
+        self.text = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE).render(text, False, BLACK)
+        self.font_rect = self.text.get_rect()
+        self.font_rect.center = (self.pos[0] + BUTTON_WIDTH // 2, self.pos[1] + BUTTON_HEIGHT // 2)

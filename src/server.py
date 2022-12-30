@@ -26,26 +26,44 @@ def new_main():
     s.listen(2)
 
     print('Listening for Connections')
+
+    connected = {}
     while True:
         try:
-            conn1, addr = s.accept()
+            conn, addr = s.accept()
             print('Connected to ' + addr[0])
-            send_str(conn1, 'WAITING')
-            conn2, addr = s.accept()
-            print('Connected to ' + addr[0])
+            game_type = recv_str(conn)
 
-            send_str(conn1, 'CONNECTED')
-            send_str(conn2, 'CONNECTED')
+            if game_type == 'GOLF':
+                print('NO SUPPORT FOR GOLF YET')
+                game_type = 'RUMMY'
 
-            p1 = randint(0, 1)
-            p2 = 1 - p1
+            if game_type not in connected:
+                connected[game_type] = []
+            connected[game_type].append(conn)
 
-            game = Game()
+            if len(connected[game_type]) >= 2:
+                conn1 = connected[game_type].pop(0)
+                conn2 = connected[game_type].pop(0)
 
-            client_thread1 = Thread(target=client_handler, args=(conn1, conn2, game, p1))
-            client_thread2 = Thread(target=client_handler, args=(conn2, conn1, game, p2))
-            client_thread1.start()
-            client_thread2.start()
+                send_str(conn1, 'CONNECTED')
+                send_str(conn2, 'CONNECTED')
+
+                p1 = randint(0, 1)
+                p2 = 1 - p1
+
+                if game_type == 'RUMMY':
+                    game = Rummy()
+                else:
+                    game = None
+
+                client_thread1 = Thread(target=client_handler, args=(conn1, conn2, game, p1))
+                client_thread2 = Thread(target=client_handler, args=(conn2, conn1, game, p2))
+                client_thread1.start()
+                client_thread2.start()
+
+            else:
+                send_str(conn, 'WAITING')
         except Exception as e:
             print(e)
 

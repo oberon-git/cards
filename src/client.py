@@ -35,7 +35,7 @@ def event_loop():
 def main(win, resources, usersettings):
     clock = pygame.time.Clock()
 
-    n = Network()
+    n = Network(usersettings.get_game_name())
     menu = None
 
     count = 0
@@ -51,8 +51,8 @@ def main(win, resources, usersettings):
             if not menu.active:
                 n.update(win, resources, usersettings, mouse_pos, clicked, count)
                 if n.game.reset:
-                    n.kill_all_threads = True
-                    main(win, resources, usersettings)
+                    n.close()
+                    draw_menu(win, resources, usersettings)
             menu.draw(win, resources, clicked, mouse_pos)
         else:
             waiting(win, ((count // BLINK_SPEED) % 3))
@@ -82,7 +82,7 @@ def draw_menu(win, resources, usersettings):
 
 def setup_win(settings, resources):
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
-    pygame.display.set_caption(settings.get_game_name())
+    pygame.display.set_caption('Cards')
     pygame.display.set_icon(resources.icon)
     return win
 

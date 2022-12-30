@@ -1,4 +1,4 @@
-local: false
+local: true
 debug: false
 window:
   width: 750
@@ -16,6 +16,7 @@ font:
   size: 30
 games:
   1: Rummy
+  2: Golf
 backgrounds:
   count: 12
   route: assets/backgrounds/

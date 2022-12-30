@@ -1,5 +1,5 @@
 import pickle
-from .game import Game
+from .rummy import Rummy
 
 
 def send_str(conn, s):
@@ -17,7 +17,7 @@ def send_initial_game(conn, game, p):
 
 def recv_initial_game(conn):
     game_dict = recv_packet(conn)
-    return game_dict['p'], Game(game_dict['deck'], game_dict['players'])
+    return game_dict['p'], Rummy(game_dict['deck'], game_dict['players'])
 
 
 def send_packet(conn, packet):
