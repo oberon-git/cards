@@ -41,25 +41,26 @@ def main(win, resources, usersettings):
     count = 0
     active = True
     while active:
-        try:
-            active, clicked, escaped, mouse_pos = event_loop()
-            if n.connected:
-                if n.game is None:
-                    n.start_game()
-                    menu = Menu(usersettings, True)
-                if escaped:
-                    menu.escape()
-                if not menu.active:
-                    n.update(win, resources, usersettings, mouse_pos, clicked, count)
-                menu.draw(win, resources, clicked, mouse_pos)
-            else:
-                waiting(win, ((count // BLINK_SPEED) % 3))
+        active, clicked, escaped, mouse_pos = event_loop()
+        if n.connected:
+            if n.game is None:
+                n.start_game()
+                menu = Menu(usersettings, True)
+            if escaped:
+                menu.escape()
+            if not menu.active:
+                n.update(win, resources, usersettings, mouse_pos, clicked, count)
+                if n.game.reset:
+                    n.kill_all_threads = True
+                    main(win, resources, usersettings)
+            menu.draw(win, resources, clicked, mouse_pos)
+        else:
+            waiting(win, ((count // BLINK_SPEED) % 3))
 
-            count += 1
-            clock.tick(FPS)
-            pygame.display.update()
-        except pygame.error or socket.error:
-            break
+        count += 1
+        clock.tick(FPS)
+        pygame.display.update()
+    n.kill_all_threads = True
 
 
 def draw_menu(win, resources, usersettings):
