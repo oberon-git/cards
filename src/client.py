@@ -36,10 +36,7 @@ class Network:
             p = int(recv_str(self.client))
             send_str(self.client, "received")
             log("Connected")
-            file_list = ['cards/' + f for f in os.listdir(CARDS_DIR)]
-            file_list += ['backgrounds/' + f for f in os.listdir(BACKGROUND_DIR)]
-            file_list += ['ui/' + f for f in os.listdir(UI_DIR)]
-            return p, file_list
+            return p
         except Exception as e:
             log(e)
 
@@ -125,23 +122,34 @@ class Network:
 
 
 class Resources:
-    def __init__(self, file_list):
+    def __init__(self):
         self.cards = {}
+        # self.card_backs = {}
         self.backgrounds = {}
         self.ui = {}
-        for filename in file_list:
-            path = os.path.abspath(ASSET_DIR + '/' + filename)
-            if "cards" in filename:
-                key = filename.replace("cards/", "").replace("_of_", "").replace(".png", "")
-                self.cards[key] = pygame.image.load(path)
-            elif "backgrounds" in filename:
-                key = int(filename.replace("backgrounds/", "").replace(".png", ""))
-                self.backgrounds[key] = pygame.image.load(path)
-            elif "ui" in filename:
-                if "icon" in filename:
-                    self.icon = pygame.image.load(path)
-                if "arrow" in filename:
-                    self.arrow = pygame.transform.rotate(pygame.transform.scale(pygame.image.load(path), (ARROW_SIZE, ARROW_SIZE)), 90)
+
+        for filename in os.listdir(f'{ASSET_DIR}/cards'):
+            path = f'{ASSET_DIR}/cards/{filename}'
+            key = filename.replace('cards/', '').replace('_of_', '').replace('.png', '')
+            self.cards[key] = pygame.image.load(path)
+
+        for filename in os.listdir(f'{ASSET_DIR}/card_backs'):
+            path = f'{ASSET_DIR}/card_backs/{filename}'
+            key = filename.replace('.png', '')
+            self.cards[key] = pygame.image.load(path)
+
+        for filename in os.listdir(f'{ASSET_DIR}/backgrounds'):
+            path = f'{ASSET_DIR}/backgrounds/{filename}'
+            key = int(filename.replace('backgrounds/', '').replace('.png', ''))
+            self.backgrounds[key] = pygame.image.load(path)
+
+        for filename in os.listdir(f'{ASSET_DIR}/ui'):
+            path = f'{ASSET_DIR}/ui/{filename}'
+            key = filename.replace('.png', '')
+            self.ui[key] = pygame.image.load(path)
+
+        self.icon = self.ui['icon']
+        self.arrow = pygame.transform.rotate(pygame.transform.scale(self.ui['arrow'], (25, 25)), 180)
 
     def draw_card(self, win, key, x, y):
         image = self.cards[key]
@@ -152,7 +160,7 @@ class Resources:
         win.blit(image, (0, 0))
 
     def draw_background_select(self, win, key, pos):
-        image = pygame.transform.scale(self.backgrounds[key], (IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT))
+        image = pygame.transform.scale(self.backgrounds[key], (100, 100))
         win.blit(image, pos)
 
     def draw_arrow(self, win, pos, orientation):
@@ -331,7 +339,7 @@ def setup_dir():
     if not os.path.exists(UI_DIR):
         os.mkdir(UI_DIR)
     if not os.path.exists(USER_SETTINGS_PATH):
-        default_settings = {"background": 1, "game": 1}
+        default_settings = {"background": 1, "shared": 1}
         with open(USER_SETTINGS_PATH, 'w') as user_file:
             yaml.dump(default_settings, user_file)
 
@@ -339,8 +347,8 @@ def setup_dir():
 def startup():
     setup_dir()
     n = Network()
-    p, card_list = n.connect()
-    resources = Resources(card_list)
+    p = n.connect()
+    resources = Resources()
     usersettings = UserSettings()
     win = setup_win(usersettings, resources)
     draw_menu(win, resources, usersettings, n, p)

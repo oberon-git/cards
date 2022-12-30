@@ -3,6 +3,7 @@ from _thread import start_new_thread
 from random import randint
 from shared import *
 
+
 class Queue:
     def __init__(self):
         self.array = []
@@ -54,31 +55,6 @@ class Connection:
         self.hand_sent = False
 
 
-def send_images(conn):
-    file_list = ['cards/' + f for f in os.listdir(CARDS_DIR)]
-    file_list += ['backgrounds/' + f for f in os.listdir(BACKGROUND_DIR)]
-    file_list += ['ui/' + f for f in os.listdir(UI_DIR)]
-    send_str(conn, str(len(file_list)))
-    data = recv_str(conn)
-    if data == "received":
-        for filename in file_list:
-            send_str(conn, filename)
-            data = recv_str(conn)
-            if data == "send":
-                with open(os.path.abspath(ASSET_DIR + '/' + filename), 'rb') as image:
-                    while True:
-                        buff = image.readline(512)
-                        if not buff:
-                            conn.sendall(END)
-                            break
-                        conn.sendall(buff)
-                    data = recv_str(conn)
-                    if data != "received":
-                        log("Failed To Load Assets")
-                        return
-    log("Images Sent")
-
-
 def client(conns, game, p):
     x = 0 if len(conns) == 1 else 1
     y = 0 if len(conns) == 2 else 1
@@ -86,7 +62,6 @@ def client(conns, game, p):
     data = recv_str(conns[x].conn)
     if data != "received":
         return
-        # send_images(conns[x].conn)
     connected = False
     while True:
         try:
@@ -153,7 +128,6 @@ def main():
             break
         except OSError:
             pass
-    log("The server's IP is", socket.gethostbyname(socket.gethostname()))
     log("Listening for Connections", True)
 
     connections = []
