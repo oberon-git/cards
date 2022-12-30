@@ -37,7 +37,7 @@ def send_game(conn, game):
 
 
 def recv_game(conn):
-    data = conn.recv(2048*4)
+    data = conn.recv(2048*16)
     return pickle.loads(data)
 
 

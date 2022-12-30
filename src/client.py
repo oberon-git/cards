@@ -1,5 +1,5 @@
+import sys
 import pygame
-import socket
 from shared.shared_data import *
 from client.menu import Menu
 from client.resources import Resources
@@ -61,6 +61,7 @@ def main(win, resources, usersettings):
         clock.tick(FPS)
         pygame.display.update()
     n.kill_all_threads = True
+    sys.exit(0)
 
 
 def draw_menu(win, resources, usersettings):

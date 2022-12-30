@@ -21,8 +21,6 @@ class Network:
         try:
             data = recv_str(self.client)
             while data != 'CONNECTED':
-                if self.kill_all_threads:
-                    return
                 data = recv_str(self.client)
             self.connected = True
         except Exception as e:
@@ -34,14 +32,15 @@ class Network:
         receiver.start()
 
     def recv_packets_from_server(self):
-        try:
-            while True:
+        while True:
+            try:
                 if self.kill_all_threads:
-                    return
+                    break
                 packet = recv_packet(self.client)
                 map_to_game(packet, self.game)
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                print(e)
+        self.client.close()
 
     def send_command_to_server(self, command):
         send_packet(self.client, command)

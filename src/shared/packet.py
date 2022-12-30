@@ -12,6 +12,7 @@ def map_to_game(packet, game):
     game.reset = packet.reset
     game.over = packet.over
     game.players = packet.players
+    game.new_card_index = packet.new_card_index
 
 
 class Packet:
@@ -25,3 +26,4 @@ class Packet:
         self.reset = game.reset
         self.over = game.over
         self.players = game.players
+        self.new_card_index = game.new_card_index
