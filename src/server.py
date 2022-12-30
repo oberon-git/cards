@@ -1,58 +1,12 @@
 import socket
-from _thread import start_new_thread
+from threading import Thread
 from random import randint
-from shared import *
-
-
-class Queue:
-    def __init__(self):
-        self.array = []
-        self.front = self.back = 0
-
-    def push(self, conn):
-        self.array.append(conn)
-        self.back += 1
-
-    def pop(self):
-        self.clean()
-        if self.back > self.front:
-            conn = self.array[self.front]
-            self.front += 1
-            return conn
-        return None
-
-    def clean(self):
-        temp = []
-        for e in range(self.front, self.back):
-            conn = self.array[e]
-            if not conn.closed:
-                temp.append(conn)
-        self.array = temp
-        self.front = 0
-        self.back = len(self.array)
-
-    def __len__(self):
-        return self.back - self.front
-
-
-class Connection:
-    def __init__(self, conn):
-        self.conn = conn
-        self.ready = False
-        self.closed = False
-        self.reset = False
-        self.over = False
-        self.hand_sent = False
-
-    def close(self):
-        self.conn.close()
-        self.ready = False
-        self.closed = True
-
-    def start_new_game(self):
-        self.reset = False
-        self.over = False
-        self.hand_sent = False
+from shared.shared_data import *
+from shared.net import *
+from shared.player import Player
+from shared.packet import Packet
+from shared.packet import map_to_game
+from server.connection import Connection
 
 
 def client(conns, game, p):
@@ -108,9 +62,8 @@ def client(conns, game, p):
                     if len(conns) == 2 and conns[x].ready and conns[y].ready:
                         connected = packet.connected = True
                     send_packet(conns[x].conn, packet)
-            tick()
         except Exception as e:
-            log(e)
+            print(e)
             break
     if len(conns) == 2 and not conns[y].closed:
         packet = Packet(game)
@@ -128,7 +81,7 @@ def main():
             break
         except OSError:
             pass
-    log("Listening for Connections", True)
+    print("Listening for Connections")
 
     connections = []
     games = []
@@ -137,7 +90,7 @@ def main():
     while True:
         try:
             conn, addr = s.accept()
-            log("Connected to " + addr[0], True)
+            print("Connected to " + addr[0])
             connection = Connection(conn)
             if len(connections) == 0:
                 connections.append(connection)
@@ -150,14 +103,67 @@ def main():
                     p = randint(0, 1)
                 else:
                     connections.append(connection)
-                    p = 0 if p == 1 else 1
-            start_new_thread(client, (connections, games[g], p))
+                    p = 1 - p
+            client_thread = Thread(target=client, args=(connections.copy(), games[g], p))
+            client_thread.start()
             if len(connections) == 2:
                 connections = []
                 g += 1
         except Exception as e:
-            log(e)
+            print(e)
+
+
+def client_handler(conn1, conn2, game, p):
+    def send_packets_to_client(conn):
+        while True:
+            try:
+                send_packet(conn, Packet(game))
+            except:
+                break
+
+    send_initial_game(conn1, game, p)
+    # sender = Thread(target=send_packets_to_client, args=(conn2,))
+    # sender.start()
+    while True:
+        try:
+            command = recv_packet(conn1)
+            command.run(game)
+            send_packet(conn1, Packet(game))
+            send_packet(conn2, Packet(game))
+        except Exception as e:
+            print(e)
+            break
+    conn1.close()
+
+
+def new_main():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(ADDR)
+    s.listen(2)
+
+    while True:
+        try:
+            conn1, addr = s.accept()
+            print("Connected to " + addr[0])
+            send_str(conn1, 'WAITING')
+            conn2, addr = s.accept()
+            print("Connected to " + addr[0])
+
+            send_str(conn1, 'CONNECTED')
+            send_str(conn2, 'CONNECTED')
+
+            p1 = randint(0, 1)
+            p2 = 1 - p1
+
+            game = Game()
+
+            client_thread1 = Thread(target=client_handler, args=(conn1, conn2, game, p1))
+            client_thread2 = Thread(target=client_handler, args=(conn2, conn1, game, p2))
+            client_thread1.start()
+            client_thread2.start()
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":
-    main()
+    new_main()
