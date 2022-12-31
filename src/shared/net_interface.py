@@ -35,5 +35,5 @@ def send_packet(conn, packet):
 
 
 def recv_packet(conn):
-    packet = pickle.loads(conn.recv(2048*16))
+    packet = pickle.loads(conn.recv(2048*64))
     return packet
