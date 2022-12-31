@@ -20,7 +20,7 @@ def recv_initial_game_data(conn):
 
 
 def recv_game(conn):
-    data = conn.recv(2048*16)
+    data = conn.recv(2048*64)
     return pickle.loads(data)
 
 
