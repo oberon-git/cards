@@ -5,8 +5,8 @@ from .threading_funcs import synchronized
 def map_to_game(packet, game):
     game.turn = packet.turn
     game.step = packet.step
-    game.top = packet.top
-    game.bottom = packet.bottom
+    game.top_card = packet.top_card
+    game.bottom_card = packet.bottom_card
     game.deck.curr = packet.curr
     game.winner = packet.winner
     game.reset = packet.reset
@@ -19,8 +19,8 @@ class Packet:
     def __init__(self, game):
         self.turn = game.turn
         self.step = game.step
-        self.top = game.top
-        self.bottom = game.bottom
+        self.top = game.top_card
+        self.bottom = game.bottom_card
         self.curr = game.deck.curr
         self.winner = game.winner
         self.reset = game.reset
