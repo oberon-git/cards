@@ -1,5 +1,4 @@
 import pickle
-from .rummy import Rummy
 
 
 def send_str(conn, s):
@@ -11,13 +10,23 @@ def recv_str(conn):
     return s.decode()
 
 
-def send_initial_game(conn, game, p):
-    send_packet(conn, {'p': p, 'deck': game.deck, 'players': game.players})
+def send_initial_game_data(conn, game, p):
+    send_packet(conn, {'p': p, 'game': game})
 
 
-def recv_initial_game(conn):
+def recv_initial_game_data(conn):
     game_dict = recv_packet(conn)
-    return game_dict['p'], Rummy(game_dict['deck'], game_dict['players'])
+    return game_dict['p'], game_dict['game']
+
+
+def recv_game(conn):
+    data = conn.recv(2048*16)
+    return pickle.loads(data)
+
+
+def send_game(conn, game):
+    data = pickle.dumps(game)
+    conn.sendall(data)
 
 
 def send_packet(conn, packet):

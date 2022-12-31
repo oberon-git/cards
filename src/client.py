@@ -53,6 +53,10 @@ def main(win, resources, usersettings):
                 if n.game.reset:
                     n.close()
                     draw_menu(win, resources, usersettings)
+            else:
+                if menu.exit_game:
+                    n.close()
+                    draw_menu(win, resources, usersettings)
             menu.draw(win, resources, clicked, mouse_pos)
         else:
             waiting(win, ((count // BLINK_SPEED) % 3))
@@ -60,7 +64,7 @@ def main(win, resources, usersettings):
         count += 1
         clock.tick(FPS)
         pygame.display.update()
-    n.kill_all_threads = True
+    n.close()
     sys.exit(0)
 
 

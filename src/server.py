@@ -2,25 +2,34 @@ import socket
 from threading import Thread
 from random import randint
 from shared.shared_data import *
-from shared.net import *
-from shared.packet import Packet
+from shared.net_interface import *
+from shared.rummy import Rummy
 
 
 def client_handler(conn1, conn2, game, p):
-    send_initial_game(conn1, game, p)
+    send_initial_game_data(conn1, game, p)
     while True:
         try:
             command = recv_packet(conn1)
             command.run(game)
-            send_packet(conn1, Packet(game))
-            send_packet(conn2, Packet(game))
+            send_game(conn1, game)
+            send_game(conn2, game)
         except Exception as e:
             print(e)
             break
     conn1.close()
 
 
+def is_connected(conn):
+    try:
+        send_str(conn, 'ping')
+        return True
+    except:
+        return False
+
+
 def new_main():
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(ADDR)
     s.listen(2)
@@ -35,12 +44,21 @@ def new_main():
             game_type = recv_str(conn)
 
             if game_type == 'GOLF':
-                print('NO SUPPORT FOR GOLF YET')
+                print('NO SUPPORT FOR GOLF  YET')
                 game_type = 'RUMMY'
 
             if game_type not in connected:
                 connected[game_type] = []
             connected[game_type].append(conn)
+
+            '''
+            conns_to_remove = set()
+            for conn in connected[game_type]:
+                if not is_connected(conn):
+                    conns_to_remove.add(conn)
+            for conn in conns_to_remove:
+                connected[game_type].remove(conn)
+            '''
 
             if len(connected[game_type]) >= 2:
                 conn1 = connected[game_type].pop(0)

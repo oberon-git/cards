@@ -1,6 +1,6 @@
 import socket
 from threading import Thread
-from src.shared.net import *
+from src.shared.net_interface import *
 from src.shared.shared_data import *
 from src.shared.packet import map_to_game
 
@@ -30,7 +30,7 @@ class Network:
             print(e)
 
     def start_game(self):
-        self.p, self.game = recv_initial_game(self.client)
+        self.p, self.game = recv_initial_game_data(self.client)
         receiver = Thread(target=self.recv_packets_from_server)
         receiver.daemon = True
         receiver.start()
@@ -40,8 +40,7 @@ class Network:
             try:
                 if self.kill_all_threads:
                     return
-                packet = recv_packet(self.client)
-                map_to_game(packet, self.game)
+                self.game = recv_game(self.client)
             except Exception as e:
                 print(e)
 

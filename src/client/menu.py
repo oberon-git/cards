@@ -14,9 +14,10 @@ class Menu:
                                                self.select_background_action)
         self.back_button = Button((50, WIN_HEIGHT - BUTTON_HEIGHT - 50), "Back", self.back)
         self.pause_button = Button((WIN_WIDTH - 50, 20), None, self.pause)
+        self.back_to_menu_button = Button(self.get_button_rect(2), "Back to Menu", self.back_to_menu)
         self.background_selects = {}
         self.selected_background = None
-        self.start = self.active = False
+        self.start = self.active = self.exit_game = False
         self.screen = 2 if self.paused else 0
 
     def get_button_rect(self, x):
@@ -38,6 +39,7 @@ class Menu:
             self.pause_button.draw(win, mouse_pos, clicked, resources)
         elif self.screen == 3:
             self.play_button.draw(win, mouse_pos, clicked, resources)
+            self.back_to_menu_button.draw(win, mouse_pos, clicked, resources)
             self.background_select_button.draw(win, mouse_pos, clicked, resources)
 
     def pause(self):
@@ -74,6 +76,9 @@ class Menu:
 
     def back(self):
         self.screen = 3 if self.paused else 0
+
+    def back_to_menu(self):
+        self.exit_game = True
 
     def play(self):
         self.start = True
