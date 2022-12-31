@@ -11,22 +11,36 @@ def recv_str(conn):
 
 
 def send_initial_game_data(conn, game, p):
-    send_packet(conn, {'p': p, 'game': game})
+    send_str(conn, str(p))
+    recv_str(conn)
+    send_game(conn, game)
 
 
 def recv_initial_game_data(conn):
-    game_dict = recv_packet(conn)
-    return game_dict['p'], game_dict['game']
+    p = int(recv_str(conn))
+    send_str(conn, "RECEIVED")
+    game = recv_game(conn)
+    return p, game
 
 
 def recv_game(conn):
-    data = conn.recv(2048*64)
+    data = []
+    while True:
+        buff = conn.recv(512)
+        if buff.endswith(b'\n'):
+            data.append(buff[:-1])
+            break
+        data.append(buff)
+    data = b''.join(data)
     return pickle.loads(data)
 
 
 def send_game(conn, game):
     data = pickle.dumps(game)
-    conn.sendall(data)
+    while data:
+        conn.sendall(data[:512])
+        data = data[512:]
+    conn.sendall(b'\n')
 
 
 def send_packet(conn, packet):
