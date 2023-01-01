@@ -1,7 +1,9 @@
 #!/bin/bash
 
+echo "$0"
+cd "$0"
+
 git stash
 git pull
-cd "$0"
 export PYTHONPATH=${PYTHONPATH}:$./src
 python3 src/client.py
