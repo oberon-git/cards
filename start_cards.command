@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dir=$(dirname "$0")
+dir=~/Documents/Alexander/cards # $(dirname "$0")
 cd "$dir" || exit
 
 git stash
