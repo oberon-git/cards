@@ -4,7 +4,7 @@ from .shared_data import IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT, BLACK, FONT_SI
 
 
 class Button:
-    def __init__(self, pos, content, action, selected=False, key_triggers=[]):
+    def __init__(self, pos, content, action, selected=False, key_triggers=()):
         self.pos = pos
         self.content = content
         self.action = action
@@ -68,7 +68,6 @@ class Button:
         if not clicked and 'p' in self.key_triggers and event.p:
             for trigger in self.key_triggers:
                 if event.__getattribute__(trigger):
-                    clicked = True
                     self.click()
                     break
 

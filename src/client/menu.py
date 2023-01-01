@@ -10,14 +10,14 @@ class Menu:
         self.settings = settings
         self.n = 2
         self.play_button = Button(self.get_button_rect(1), "Play", self.play)
-        self.continue_button = Button(self.get_button_rect(1), "Continue", self.play, key_triggers=['p'])
+        self.continue_button = Button(self.get_button_rect(1), "Continue", self.play, key_triggers='p')
         self.selected_game = settings.get_game_name()
         self.game_select_button = Button(self.get_button_rect(2), self.selected_game, self.next_game)
         self.background_select_button = Button(self.get_button_rect(3), "Select Background",
                                                self.select_background_action)
         self.card_select_button = Button(self.get_button_rect(4), "Select Card", self.select_card_action)
         self.back_button = Button((50, WIN_HEIGHT - BUTTON_HEIGHT - 50), "Back", self.back)
-        self.pause_button = Button((WIN_WIDTH - 50, 20), None, self.pause, key_triggers=['p'])
+        self.pause_button = Button((WIN_WIDTH - 50, 20), None, self.pause, key_triggers='p')
         self.back_to_menu_button = Button(self.get_button_rect(2), "Back to Menu", self.back_to_menu)
         self.background_selects = {}
         self.selected_background = None
