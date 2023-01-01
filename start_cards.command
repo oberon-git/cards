@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "$0"
-cd "$0"
+dir=$(dirname "$0")
+cd dir
 
 git stash
 git pull
