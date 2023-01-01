@@ -74,3 +74,49 @@ class Button:
     def change_text(self, text):
         assert self.type == 0
         self.content = text
+
+
+class TextButton: # TODO inherit from button
+    def __init__(self, pos, content, action, selected=False, key_triggers=()):
+        # super().__init__(pos, content, action, selected=selected, key_triggers=key_triggers)
+        self.pos = pos
+        self.content = content
+        self.action = action
+        self.selected = selected
+        self.key_triggers = key_triggers
+
+        self.rect = (pos[0], pos[1], BUTTON_WIDTH, BUTTON_HEIGHT)
+
+    def draw(self, win, resources, event):  # frame_count
+        resources.draw_button(win, self.pos)
+        text = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE).render(self.content, False, BLACK)
+        font_rect = text.get_rect()
+        font_rect.center = (self.pos[0] + BUTTON_WIDTH // 2, self.pos[1] + BUTTON_HEIGHT // 2)
+        win.blit(text, font_rect)
+
+        clicked = False
+        if self.in_range(event.mouse_pos):
+            self.outline(win)  # TODO switch out png to highlighted version
+            if event.click:
+                clicked = True
+                self.click()
+        elif self.selected:
+            self.outline(win)  # TODO switch out png to highlighted version
+        if not clicked and 'p' in self.key_triggers and event.p:
+            for trigger in self.key_triggers:
+                if event.__getattribute__(trigger):
+                    self.click()
+                    break
+
+    def outline(self, win):
+        rect = (self.rect[0] - OUTLINE_WIDTH, self.rect[1] - OUTLINE_WIDTH, self.rect[2] + OUTLINE_WIDTH, self.rect[3] + OUTLINE_WIDTH)
+        pygame.draw.rect(win, OUTLINE, rect, width=OUTLINE_WIDTH)
+
+    def click(self):
+        self.action()
+
+    def in_range(self, pos):
+        if self.rect[0] <= pos[0] <= self.rect[0] + self.rect[2]:
+            if self.rect[1] <= pos[1] <= self.rect[1] + self.rect[3]:
+                return True
+        return False

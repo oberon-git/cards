@@ -1,6 +1,6 @@
 import pygame
 import os
-from src.shared.shared_data import ASSET_DIR, WIN_WIDTH, WIN_HEIGHT, CARD_BACKS
+from src.shared.shared_data import ASSET_DIR, WIN_WIDTH, WIN_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, CARD_BACKS
 
 
 class Resources:
@@ -58,6 +58,7 @@ class Resources:
 
         self.icon = self.ui['icon']
         self.arrow = pygame.transform.rotate(pygame.transform.scale(self.ui['arrow'], (25, 25)), 180)
+        self.button = pygame.transform.scale(self.ui['button'], (BUTTON_WIDTH, BUTTON_HEIGHT))
 
     def draw_card(self, win, key, x, y, selected=False):
         image = self.card_overlays[key] if selected else self.cards[key]
@@ -78,6 +79,9 @@ class Resources:
     def draw_arrow(self, win, pos, orientation):
         image = pygame.transform.rotate(self.arrow, 180 if orientation == 0 else 0)
         win.blit(image, pos)
+
+    def draw_button(self, win, pos):
+        win.blit(self.button, pos)
 
 
 class CardBack:
