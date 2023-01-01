@@ -2,9 +2,10 @@ from .shared_data import CARD_TYPES, CARD_SUITS
 
 
 class Card:
-    def __init__(self, v, s):
+    def __init__(self, v, s, face_up=False):
         self.v = v
         self.s = s
+        self.face_up = face_up
         self.c = CARD_TYPES[self.v] + CARD_SUITS[self.s]
         self.sort = 1
 
@@ -25,6 +26,9 @@ class Card:
 
     def sort_by_value(self):
         self.sort = 1
+
+    def flip(self):
+        self.face_up = not self.face_up
 
     def __lt__(self, other):
         if self.sort == 0:

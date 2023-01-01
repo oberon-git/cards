@@ -3,4 +3,4 @@
 git stash
 git pull
 export PYTHONPATH=${PYTHONPATH}:$./src
-python3 src/client.py > /dev/nul
+python3 ~/Documents/Alexander/cards/src/client.py > /dev/nul

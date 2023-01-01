@@ -59,7 +59,7 @@ class Rummy(Game):
 
         # draw the opponents hand
         if self.over:
-            o = 0 if p == 1 else 1
+            o = 1 - p
             hand = self.players[o].hand()
             for i in range(len(hand)):
                 c = hand[i]

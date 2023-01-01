@@ -5,6 +5,7 @@ import traceback
 from shared.shared_data import ADDR
 from shared.net_interface import send_str, send_initial_game_data, send_game, recv_command, recv_str
 from shared.rummy import Rummy
+from shared.golf import Golf
 
 
 def client_handler(conn1, conn2, game, p):
@@ -35,10 +36,6 @@ def new_main():
         print('Connected to ' + addr[0])
         game_type = recv_str(conn)
 
-        if game_type == 'GOLF':
-            print('NO SUPPORT FOR GOLF  YET')
-            game_type = 'RUMMY'
-
         if game_type not in connected:
             connected[game_type] = []
         connected[game_type].append(conn)
@@ -55,6 +52,8 @@ def new_main():
 
             if game_type == 'RUMMY':
                 game = Rummy()
+            elif game_type == 'GOLF':
+                game = Golf()
             else:
                 game = None
 
