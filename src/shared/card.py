@@ -1,4 +1,4 @@
-from .shared_data import *
+from .shared_data import CARD_TYPES, CARD_SUITS
 
 
 class Card:
@@ -8,8 +8,8 @@ class Card:
         self.c = CARD_TYPES[self.v] + CARD_SUITS[self.s]
         self.sort = 1
 
-    def draw(self, win, resources, x, y):
-        resources.draw_card(win, self.c, x, y)
+    def draw(self, win, resources, x, y, selected=False):
+        resources.draw_card(win, self.c, x, y, selected)
 
     def card(self):
         return self.c
@@ -51,7 +51,7 @@ class Card:
                 return self.v > other.v
 
     def __eq__(self, other):
-        return self.s == other.s and self.c == other.c
+        return self.v == other.v and self.s == other.s
 
     def __str__(self):
         return self.c

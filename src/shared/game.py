@@ -14,7 +14,7 @@ def card_selected(x, y, pos):
 
 
 def outline_card(win, x, y, color=OUTLINE):
-    rect = (x - OUTLINE_WIDTH, y - OUTLINE_WIDTH, CARD_WIDTH + OUTLINE_WIDTH, CARD_HEIGHT + OUTLINE_WIDTH)
+    rect = (x - OUTLINE_WIDTH, y - OUTLINE_WIDTH, CARD_WIDTH + OUTLINE_WIDTH + 2, CARD_HEIGHT + OUTLINE_WIDTH + 2)
     pygame.draw.rect(win, color, rect, width=OUTLINE_WIDTH)
 
 
@@ -28,12 +28,12 @@ class Game:
         self.over = self.reset = False
         self.play_again_button = Button((CENTER[0] - BUTTON_WIDTH // 2, CENTER[1] + 100), "Play Again", self.play_again)
 
-    def draw(self, win, resources, settings, p, mouse_pos, clicked, count, network):
-        resources.draw_background(win, settings.background)
+    def draw(self, win, resources, client_data, p, event, frame_count, network):
+        resources.draw_background(win, client_data.settings.background)
 
         if self.over:
             self.draw_winner(win, p)
-            self.play_again_button.draw(win, mouse_pos, clicked, resources)
+            self.play_again_button.draw(win, resources, event)
         else:
             self.draw_pointer(win, resources, p)
 
@@ -47,8 +47,10 @@ class Game:
         font = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)
         if self.winner == p:
             text = font.render("You Won!", True, WHITE)
-        else:
+        elif self.winner == 1 - p:
             text = font.render("You Lost!", True, WHITE)
+        else:
+            text = font.render("It's a Tie!", True, WHITE)
         rect = text.get_rect()
         rect.center = (CENTER[0], CENTER[1] - 100)
         win.blit(text, rect)

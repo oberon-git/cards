@@ -10,27 +10,54 @@ class Rummy(Game):
         self.bottom_card = None
         self.new_card_index = -1
 
-    def draw(self, win, resources, settings, p, mouse_pos, clicked, count, network):
-        super().draw(win, resources, settings, p, mouse_pos, clicked, count, network)
+    def draw(self, win, resources, client_data, p, event, frame_count, network):
+        super().draw(win, resources, client_data, p, event, frame_count, network)
 
-        back = "castle_back_0" + str(((count // BLINK_SPEED) % 2) + 1)
+        select_frame = (frame_count // (BLINK_SPEED * 2)) % 2 == 0
         mult = CARD_WIDTH + CARD_SPACING
         offset = (WIN_WIDTH - (len(self.players[p].hand()) * mult) + CARD_SPACING) // 2
         hand = self.players[p].hand()
 
+        if self.turn == p and not self.over:
+            if self.step == 0:
+                if event.left:
+                    if client_data.selected_index > 0:
+                        client_data.selected_index -= 1
+                elif event.right:
+                    if client_data.selected_index < 1:
+                        client_data.selected_index += 1
+            elif self.step == 1:
+                if event.left:
+                    if client_data.selected_index > 0:
+                        client_data.selected_index -= 1
+                elif event.right:
+                    if client_data.selected_index < self.hand_size:
+                        client_data.selected_index += 1
+
+        # draw the players hand
+        y = WIN_HEIGHT - CARD_HEIGHT - 30
         for i in range(len(hand)):
             c = hand[i]
             x = i * mult + offset
-            y = WIN_HEIGHT - CARD_HEIGHT - 30
-            c.draw(win, resources, x, y)
-            if self.turn == p and self.step == 1 and not self.over and card_selected(x, y, mouse_pos):
-                outline_card(win, x, y)
-                if clicked:
-                    network.send_command_to_server(DiscardCommand(p, c))
-            elif self.turn == p and self.step == 1 and not self.over and self.new_card_index == i:
-                if (count // BLINK_SPEED) % 2 == 0:
-                    outline_card(win, x, y, BLACK)
+            selected = False
+            if self.turn == p and self.step == 1 and not self.over:
+                if card_selected(x, y, event.mouse_pos):
+                    client_data.selected_index = i
+                    selected = True
+                    if event.click or event.enter:
+                        network.send_command_to_server(DiscardCommand(p, c))
+                        client_data.selected_index = 0
+                elif i == client_data.selected_index:
+                    selected = True
+                    if event.enter:
+                        network.send_command_to_server(DiscardCommand(p, c))
+                        client_data.selected_index = 0
+                elif self.turn == p and self.step == 1 and not self.over and self.new_card_index == i:
+                    if (frame_count // (BLINK_SPEED * 2)) % 2 == 0:
+                        outline_card(win, x, y, BLACK)
+            c.draw(win, resources, x, y, selected=selected and select_frame)
 
+        # draw the opponents hand
         if self.over:
             o = 0 if p == 1 else 1
             hand = self.players[o].hand()
@@ -43,27 +70,51 @@ class Rummy(Game):
             n = self.hand_size + 1 if self.turn != p and self.step == 1 else self.hand_size
             offset = (WIN_WIDTH - (n * mult) + CARD_SPACING) // 2
             for i in range(n):
-                resources.draw_card(win, back, i * mult + offset, 30)
+                resources.draw_card_back(win, client_data.settings.card_back, i * mult + offset, 30, frame_count)
 
+        # draw deck and discard piles
         x = CENTER[0] - CARD_WIDTH // 2 - mult // 2
         y = CENTER[1] - CARD_HEIGHT // 2
-        resources.draw_card(win, back, x, y)
-        if self.turn == p and self.step == 0 and not self.over and card_selected(x, y, mouse_pos):
-            outline_card(win, x, y)
-            if clicked:
-                network.send_command_to_server(DrawFromDeckCommand(p))
+        if not self.deck.is_empty():
+            selected = False
+            if self.turn == p and self.step == 0 and not self.over:
+                if card_selected(x, y, event.mouse_pos):
+                    client_data.selected_index = 0
+                    selected = True
+                    if event.click or event.enter:
+                        network.send_command_to_server(DrawFromDeckCommand(p))
+                        client_data.selected_index = 0
+                elif client_data.selected_index == 0:
+                    selected = True
+                    if event.enter:
+                        network.send_command_to_server(DrawFromDeckCommand(p))
+                        client_data.selected_index = 0
+            resources.draw_card_back(win, client_data.settings.card_back, x, y, frame_count, selected=selected and select_frame)
         x += mult
         if self.over:
-            resources.draw_card(win, back, x, y)
+            resources.draw_card_back(win, client_data.settings.card_back, x, y, frame_count)
         elif self.top_card is not None:
-            resources.draw_card(win, self.top_card.card(), x, y)
-            if self.turn == p and self.step == 0 and card_selected(x, y, mouse_pos):
-                outline_card(win, x, y)
-                if clicked:
-                    network.send_command_to_server(DrawFromDiscardCommand(p))
+            selected = False
+            if self.turn == p and self.step == 0:
+                if card_selected(x, y, event.mouse_pos):
+                    client_data.selected_index = 1
+                    selected = True
+                    if event.click:
+                        network.send_command_to_server(DrawFromDiscardCommand(p))
+                        client_data.selected_index = 0
+                elif client_data.selected_index == 1:
+                    selected = True
+                    if event.enter:
+                        network.send_command_to_server(DrawFromDiscardCommand(p))
+                        client_data.selected_index = 0
+            self.top_card.draw(win, resources, x, y, selected=selected and select_frame)
 
     def draw_card_from_deck(self, p):
-        self.new_card_index = self.players[p].draw_card(self.deck.deal_card())
+        c = self.deck.deal_card()
+        self.new_card_index = self.players[p].draw_card(c)
+        if self.deck.is_empty():
+            self.winner = 2
+            self.over = True
         self.step = 1
 
     def draw_top_card(self, p):

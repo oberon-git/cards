@@ -3,8 +3,15 @@ class Player:
         self.h = hand
         self.h.sort()
 
-    def play_card(self, c):
-        return self.h.remove(c)
+    def play_card(self, card):
+        i_to_pop = -1
+        for i in range(len(self.h)):
+            if self.h[i] == card:
+                i_to_pop = i
+                break
+        if i_to_pop == -1:
+            raise Exception('Card was not in hand.')
+        return self.h.pop(i_to_pop)
 
     def draw_card(self, c):
         self.h.append(c)

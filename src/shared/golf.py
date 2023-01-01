@@ -8,5 +8,5 @@ class Golf(Game):
     def __init__(self):
         super().__init__(6)
 
-    def draw(self, win, resources, settings, p, mouse_pos, clicked, count, network):
-        super().draw(win, resources, settings, p, mouse_pos, clicked, count, network)
+    def draw(self, win, resources, settings, p, event, frame_count, network):
+        super().draw(win, resources, settings, p, event, frame_count, network)

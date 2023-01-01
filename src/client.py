@@ -1,119 +1,85 @@
 import sys
 import pygame
-from shared.shared_data import *
+from shared.shared_data import WIN_WIDTH, WIN_HEIGHT, WIN_NAME, CENTER, FPS, BLINK_SPEED
+from shared.shared_data import WHITE, BLACK, FONT_SIZE, FONT_FAMILY
 from client.menu import Menu
 from client.resources import Resources
 from client.network import Network
 from client.user_settings import UserSettings
-
-pygame.init()
+from client.event import Event
+from client.client_game_data import ClientGameData
 
 
 def waiting(win, x):
     font = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)
     win.fill(WHITE)
-    rect = font.render("Waiting For Opponent.", True, BLACK).get_rect()
+    rect = font.render("Waiting For Opponent", True, BLACK).get_rect()
     rect.center = CENTER
-    text = font.render("Waiting For Opponent." + "." * x, True, BLACK)
+    text = font.render("Waiting For Opponent" + "." * x, True, BLACK)
     win.blit(text, rect)
 
 
-def event_loop():
-    active = True
-    clicked = escaped = False
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            active = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            clicked = True
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                escaped = True
-    return active, clicked, escaped, pygame.mouse.get_pos()
-
-
-def main(win, resources, usersettings):
-    clock = pygame.time.Clock()
-
+def game_loop(win, resources, menu, usersettings):
     n = Network(usersettings.get_game_name())
-    menu = None
-
-    count = 0
-    active = True
-    while active:
-        active, clicked, escaped, mouse_pos = event_loop()
+    client_data = ClientGameData(usersettings)
+    clock = pygame.time.Clock()
+    frame_count = 0
+    while True:
+        event = Event(pygame.event.get())
+        if event.quit:
+            break
         if n.connected:
-            if n.game is None:
+            if not n.game_started:
                 n.start_game()
-                menu = Menu(usersettings, True)
-            if escaped:
-                menu.escape()
+            if event.escape and menu.escape():
+                break
+            if n.game.reset or menu.exit_game:
+                n.close()
+                return menu_loop(win, resources, usersettings)
             if not menu.active:
-                n.update(win, resources, usersettings, mouse_pos, clicked, count)
-                if n.game.reset:
-                    n.close()
-                    draw_menu(win, resources, usersettings)
-            else:
-                if menu.exit_game:
-                    n.close()
-                    draw_menu(win, resources, usersettings)
-            menu.draw(win, resources, clicked, mouse_pos)
+                n.update(win, resources, client_data, event, frame_count)
+            menu.draw(win, resources, event, frame_count)
         else:
-            waiting(win, ((count // BLINK_SPEED) % 3))
-
-        count += 1
+            waiting(win, ((frame_count // BLINK_SPEED) % 4))
+        frame_count += 1
         clock.tick(FPS)
         pygame.display.update()
     n.close()
-    sys.exit(0)
 
 
-def draw_menu(win, resources, usersettings):
+def menu_loop(win, resources, usersettings):
     clock = pygame.time.Clock()
     menu = Menu(usersettings)
-
-    active = True
-    while active:
-        active, clicked, escaped, pos = event_loop()
-        if active:
-            active = menu.escape(escaped)
-        menu.draw(win, resources, clicked, pos)
+    frame_count = 0
+    while True:
+        event = Event(pygame.event.get())
+        if event.quit:
+            break
+        if event.escape and menu.escape():
+            break
+        menu.draw(win, resources, event, frame_count)
         if menu.start:
-            return main(win, resources, usersettings)
+            return game_loop(win, resources, menu, usersettings)
+        frame_count += 1
         clock.tick(FPS)
         pygame.display.update()
 
 
-def setup_win(settings, resources):
+def main():
+    pygame.init()
+
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
-    pygame.display.set_caption('Cards')
-    pygame.display.set_icon(resources.icon)
-    return win
-
-
-def setup_dir():
-    if not os.path.exists(ASSET_DIR):
-        os.mkdir(ASSET_DIR)
-    if not os.path.exists(CARDS_DIR):
-        os.mkdir(CARDS_DIR)
-    if not os.path.exists(BACKGROUND_DIR):
-        os.mkdir(BACKGROUND_DIR)
-    if not os.path.exists(UI_DIR):
-        os.mkdir(UI_DIR)
-    if not os.path.exists(USER_SETTINGS_PATH):
-        default_settings = {"background": 1, "shared": 1}
-        with open(USER_SETTINGS_PATH, 'w') as user_file:
-            yaml.dump(default_settings, user_file)
-
-
-def startup():
-    setup_dir()
     resources = Resources()
     usersettings = UserSettings()
-    win = setup_win(usersettings, resources)
-    draw_menu(win, resources, usersettings)
+
+    pygame.display.set_caption(WIN_NAME)
+    pygame.display.set_icon(resources.icon)
+
+    menu_loop(win, resources, usersettings)
+
+    pygame.quit()
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    startup()
-    pygame.quit()
+    main()

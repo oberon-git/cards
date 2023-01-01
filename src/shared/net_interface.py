@@ -43,11 +43,11 @@ def send_game(conn, game):
     conn.sendall(b'\n')
 
 
-def send_packet(conn, packet):
-    data = pickle.dumps(packet)
+def send_command(conn, command):
+    data = pickle.dumps(command)
     conn.sendall(data)
 
 
-def recv_packet(conn):
-    packet = pickle.loads(conn.recv(2048*64))
-    return packet
+def recv_command(conn):
+    command = pickle.loads(conn.recv(2048))
+    return command

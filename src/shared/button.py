@@ -1,17 +1,15 @@
 import pygame
-from .shared_data import *
-
-
-if not pygame.get_init():
-    pygame.init()
+from .shared_data import BUTTON_WIDTH, BUTTON_HEIGHT, BUTTON, OUTLINE_WIDTH, OUTLINE
+from .shared_data import IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT, BLACK, FONT_SIZE, FONT_FAMILY
 
 
 class Button:
-    def __init__(self, pos, content, action, selected=False):
+    def __init__(self, pos, content, action, selected=False, key_triggers=[]):
         self.pos = pos
         self.content = content
         self.action = action
         self.selected = selected
+        self.key_triggers = key_triggers
         if type(content) == str:
             self.type = 0
             self.rect = (pos[0], pos[1], BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -47,7 +45,7 @@ class Button:
         pygame.draw.rect(win, BLACK, (self.pos[0], self.pos[1], 10, 40))
         pygame.draw.rect(win, BLACK, (self.pos[0] + 20, self.pos[1], 10, 40))
 
-    def draw(self, win, mouse_pos, clicked, resources):
+    def draw(self, win, resources, event):
         if self.type == 0:
             self.draw_button(win)
             text = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE).render(self.content, False, BLACK)
@@ -58,12 +56,21 @@ class Button:
             resources.draw_background_select(win, self.key, self.pos)
         elif self.type == 2:
             self.draw_pause_button(win)
-        if self.in_range(mouse_pos):
+
+        clicked = False
+        if self.in_range(event.mouse_pos):
             self.outline(win)
-            if clicked:
+            if event.click:
+                clicked = True
                 self.click()
         elif self.selected:
             self.outline(win)
+        if not clicked and 'p' in self.key_triggers and event.p:
+            for trigger in self.key_triggers:
+                if event.__getattribute__(trigger):
+                    clicked = True
+                    self.click()
+                    break
 
     def change_text(self, text):
         assert self.type == 0

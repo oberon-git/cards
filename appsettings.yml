@@ -1,9 +1,10 @@
-local: false
+local: true
 debug: false
 window:
   width: 750
   height: 750
   fps: 60
+  name: Cards
 buttons:
   classic:
     width: 300
@@ -41,7 +42,43 @@ cards:
     2: hearts
     3: clubs
     4: diamonds
-  backs: [castle_back_01, castle_back_02]
+  backs:
+    cross_hatch:
+      frames: 1
+      animation_speed: 0
+    pipes:
+      frames: 1
+      animation_speed: 0
+    black_plants:
+      frames: 1
+      animation_speed: 0
+    blue_plants:
+      frames: 1
+      animation_speed: 0
+    three_fish:
+      frames: 1
+      animation_speed: 0
+    four_fish:
+      frames: 1
+      animation_speed: 0
+    rose:
+      frames: 1
+      animation_speed: 0
+    shell:
+      frames: 1
+      animation_speed: 0
+    castle:
+      frames: 2
+      animation_speed: 20
+    robot:
+      frames: 3
+      animation_speed: 20
+    beach:
+      frames: 3
+      animation_speed: 20
+    hand:
+      frames: 3
+      animation_speed: 20
   width: 69
   height: 94
   spacing: 20
@@ -54,5 +91,9 @@ ui:
   extension: .png
 animation:
   blink_speed: 20
+default_user_settings:
+  background: 1
+  card_back: cross_hatch
+  game: 1
 
 

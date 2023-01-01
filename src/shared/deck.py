@@ -1,5 +1,5 @@
-from random import *
-from .shared_data import *
+from random import shuffle
+from .shared_data import CARD_TYPES, CARD_SUITS
 from .card import Card
 
 
@@ -11,18 +11,13 @@ class Deck:
                 c = Card(card, suit)
                 self.deck.append(c)
         shuffle(self.deck)
-        self.curr = 0
-
-    def get_deck(self):
-        return self.deck
 
     def deal_hand(self, n):
-        hand = []
-        for _ in range(n):
-            hand.append(self.deal_card())
-        return hand
+        return [self.deal_card() for _ in range(n)]
 
     def deal_card(self):
-        c = self.deck[self.curr]
-        self.curr += 1
+        c = self.deck.pop(0)
         return c
+
+    def is_empty(self):
+        return len(self.deck) == 0

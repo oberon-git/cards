@@ -1,8 +1,7 @@
 import socket
 from threading import Thread
-from src.shared.net_interface import *
-from src.shared.shared_data import *
-from src.shared.packet import map_to_game
+from src.shared.net_interface import send_str, recv_str, send_command, recv_initial_game_data, recv_game
+from src.shared.shared_data import ADDR
 
 
 class Network:
@@ -17,6 +16,7 @@ class Network:
         connection_handler.start()
 
         self.game = self.p = None
+        self.game_started = False
         self.kill_all_threads = False
 
     def connect(self):
@@ -31,6 +31,7 @@ class Network:
 
     def start_game(self):
         self.p, self.game = recv_initial_game_data(self.client)
+        self.game_started = True
         receiver = Thread(target=self.recv_packets_from_server)
         receiver.daemon = True
         receiver.start()
@@ -45,12 +46,11 @@ class Network:
                 print(e)
 
     def send_command_to_server(self, command):
-        send_packet(self.client, command)
+        send_command(self.client, command)
 
-    def update(self, win, resources, usersettings, mouse_pos, clicked, count):
-        self.game.draw(win, resources, usersettings, self.p, mouse_pos, clicked, count, self)
+    def update(self, win, resources, client_data, input_event, frame_count):
+        self.game.draw(win, resources, client_data, self.p, input_event, frame_count, self)
 
     def close(self):
         self.kill_all_threads = True
         self.client.close()
-
