@@ -46,6 +46,8 @@ class Resources:
                     frames.append(pygame.image.load(path))
                 self.card_back_overlays[key] = CardBack(frames, data['animation_speed'])
 
+        self.empty_card_overlay = pygame.image.load(f'{ASSET_DIR}/misc/empty_card_overlay.png')
+
         for filename in os.listdir(f'{ASSET_DIR}/backgrounds'):
             path = f'{ASSET_DIR}/backgrounds/{filename}'
             key = int(filename.replace('backgrounds/', '').replace('.png', ''))
@@ -67,6 +69,10 @@ class Resources:
     def draw_card_back(self, win, key, x, y, frame_count, selected=False):
         back = self.card_back_overlays[key] if selected else self.card_backs[key]
         back.draw(win, x, y, frame_count)
+
+    def draw_empty_selection(self, win, x, y):
+        print(x, y)
+        win.blit(self.empty_card_overlay, (x, y))
 
     def draw_background(self, win, key):
         image = pygame.transform.scale(self.backgrounds[key], (WIN_WIDTH, WIN_HEIGHT))

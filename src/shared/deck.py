@@ -12,11 +12,12 @@ class Deck:
                 self.deck.append(c)
         shuffle(self.deck)
 
-    def deal_hand(self, n):
-        return [self.deal_card() for _ in range(n)]
+    def deal_hand(self, n, face_up=True):
+        return [self.deal_card(face_up) for _ in range(n)]
 
-    def deal_card(self):
+    def deal_card(self, face_up=True):
         c = self.deck.pop(0)
+        c.face_up = face_up
         return c
 
     def is_empty(self):

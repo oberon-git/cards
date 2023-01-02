@@ -99,7 +99,7 @@ class Rummy(Game):
                 if card_selected(x, y, event.mouse_pos):
                     client_data.selected_index = 1
                     selected = True
-                    if event.click:
+                    if event.click or event.enter:
                         network.send_command_to_server(DrawFromDiscardCommand(p))
                         client_data.selected_index = 0
                 elif client_data.selected_index == 1:

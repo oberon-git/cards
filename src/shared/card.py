@@ -2,7 +2,7 @@ from .shared_data import CARD_TYPES, CARD_SUITS
 
 
 class Card:
-    def __init__(self, v, s, face_up=False):
+    def __init__(self, v, s, face_up=True):
         self.v = v
         self.s = s
         self.face_up = face_up

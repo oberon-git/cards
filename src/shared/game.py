@@ -22,7 +22,7 @@ class Game:
     def __init__(self, hand_size):
         self.hand_size = hand_size
         self.deck = Deck()
-        self.players = [Player(self.deck.deal_hand(self.hand_size)), Player(self.deck.deal_hand(self.hand_size))]
+        self.players = [Player(self.deck.deal_hand(self.hand_size, False)), Player(self.deck.deal_hand(self.hand_size, False))]
         self.turn = 0
         self.winner = -1
         self.over = self.reset = False
