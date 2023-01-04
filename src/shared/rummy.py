@@ -1,10 +1,10 @@
-from .shared_data import CARD_WIDTH, CARD_HEIGHT, CENTER, BLINK_SPEED, CARD_SPACING, WIN_WIDTH, WIN_HEIGHT, BLACK
-from .game import Game, card_selected, outline_card
+from .shared_data import CARD_WIDTH, CARD_HEIGHT, CENTER, BLINK_SPEED, CARD_SPACING, WIN_WIDTH, WIN_HEIGHT
+from .game import Game, card_selected
 
 
 class Rummy(Game):
     def __init__(self):
-        super().__init__(7, sort_hand=True)
+        super().__init__(7, face_up=True, sort_hand=True)
         self.step = 0
         self.top_card = self.deck.deal_card()
         self.bottom_card = None
@@ -124,13 +124,66 @@ class Rummy(Game):
 
     def discard_card(self, p, c):
         self.players[p].play_card(c)
-        if self.players[p].won():
+        if self.won(p):
             self.winner = p
             self.over = True
         self.bottom_card = self.top_card
         self.top_card = c
         self.step = 0
         self.turn = 1 - self.turn
+
+    def won(self, p):
+        copy = self.players[p].hand().copy()
+        self.players[p].sort_by_suit()
+        runs = []
+        c = 0
+        while c < len(self.players[p].hand()):
+            run = set()
+            run.add(self.players[p].hand()[c])
+            while c < len(self.players[p].hand())-1 and self.players[p].hand()[c].suit() == self.players[p].hand()[c+1].suit() \
+                    and (self.players[p].hand()[c].value() == self.players[p].hand()[c+1].value()-1 or self.players[p].hand()[c].value() == 13
+                         and self.players[p].hand()[c+1].value() == 1):
+                c += 1
+                run.add(self.players[p].hand()[c])
+                if c < len(self.players[p].hand())-1 and self.players[p].hand()[c].value() == 13 and self.players[p].hand()[c+1].value() == 1:
+                    break
+            if len(run) >= 3:
+                runs.append(run)
+            c += 1
+
+        self.players[p].sort_by_value()
+        pairs = []
+        c = 0
+        while c < len(self.players[p].hand()):
+            pair = set()
+            pair.add(self.players[p].hand()[c])
+            while c < len(self.players[p].hand())-1 and self.players[p].hand()[c].value() == self.players[p].hand()[c+1].value():
+                c += 1
+                pair.add(self.players[p].hand()[c])
+            if len(pair) >= 3:
+                pairs.append(pair)
+            c += 1
+        self.players[p].set_hand(copy)
+
+        for i in range(len(runs)-1):
+            if len(runs[i]) == 7:
+                return True
+            for j in range(i+1, len(runs)):
+                if len(runs[i]) + len(runs[j]) == 7:
+                    return True
+        for i in range(len(pairs)-1):
+            for j in range(i+1, len(pairs)):
+                if len(pairs[i]) + len(pairs[j]) == 7:
+                    return True
+        for pair in pairs:
+            for run in runs:
+                points = len(run)
+                for card in pair:
+                    if card in run:
+                        points -= 1
+                if points + len(pair) == 7:
+                    return True
+        return False
 
 
 class DrawFromDeckCommand:

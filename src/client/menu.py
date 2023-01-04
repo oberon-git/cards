@@ -52,7 +52,7 @@ class Menu:
         self.card_select_button = TextButton(get_button_rect(4), "Select Card", self.select_card_action)
 
         self.pause_button = PauseButton((WIN_WIDTH - 50, 20), self.pause, key_triggers='p')
-        self.play_again_button = Button((CENTER[0] - BUTTON_WIDTH // 2, CENTER[1] + 100), "Play Again", self.play_again)
+        self.play_again_button = TextButton((CENTER[0] - BUTTON_WIDTH // 2, CENTER[1] + 100), "Play Again", self.play_again)
 
         self.back_button = TextButton((50, WIN_HEIGHT - BUTTON_HEIGHT - 50), "Back", self.back)
         self.back_to_menu_button = TextButton(get_button_rect(2), "Back to Menu", self.back_to_menu)

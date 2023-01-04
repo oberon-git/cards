@@ -18,12 +18,13 @@ def outline_card(win, x, y, color=OUTLINE):
 
 
 class Game:
-    def __init__(self, hand_size, sort_hand=False):
+    def __init__(self, hand_size, face_up=False, sort_hand=False, pointer_pos=150):
         self.hand_size = hand_size
+        self.pointer_pos = pointer_pos
         self.deck = Deck()
         self.players = [
-            Player(self.deck.deal_hand(self.hand_size, False), sort_hand=sort_hand),
-            Player(self.deck.deal_hand(self.hand_size, False), sort_hand=sort_hand)
+            Player(self.deck.deal_hand(self.hand_size, face_up=face_up), sort_hand=sort_hand),
+            Player(self.deck.deal_hand(self.hand_size, face_up=face_up), sort_hand=sort_hand)
         ]
         self.turn = 0
         self.winner = -1
@@ -31,7 +32,6 @@ class Game:
 
     def draw(self, win, resources, client_data, p, event, frame_count, network):
         resources.draw_background(win, client_data.settings.background)
-
         if self.over:
             self.draw_winner(win, p)
         else:
@@ -39,9 +39,9 @@ class Game:
 
     def draw_pointer(self, win, resources, p):
         if p == self.turn:
-            resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, WIN_HEIGHT - 150 - ARROW_SIZE), 0)
+            resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, WIN_HEIGHT - self.pointer_pos - ARROW_SIZE), 0)
         else:
-            resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, 150), 1)
+            resources.draw_arrow(win, (CENTER[0] - ARROW_SIZE // 2, self.pointer_pos), 1)
 
     def draw_winner(self, win, p):
         font = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)

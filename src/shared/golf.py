@@ -2,11 +2,29 @@ from .shared_data import CARD_WIDTH, CARD_HEIGHT, CENTER, BLINK_SPEED, CARD_SPAC
 from .game import Game, card_selected
 
 
+CARD_POINTS = {
+    1: 1,
+    2: -2,
+    3: 3,
+    4: 4,
+    5: 5,
+    6: 6,
+    7: 7,
+    8: 8,
+    9: 9,
+    10: 10,
+    11: 10,
+    12: 10,
+    13: 0
+}
+
+
 class Golf(Game):
     def __init__(self):
-        super().__init__(6)
-        self.step = 0
-        self.top_card = self.deck.deal_card()
+        super().__init__(6, face_up=False, sort_hand=False, pointer_pos=300)
+        self.step = 2
+        self.initial_cards_flipped = [0, 0]
+        self.top_card = self.deck.deal_card(face_up=True)
         self.bottom_card = None
         self.drawn_card = None
 
@@ -30,7 +48,7 @@ class Golf(Game):
                         client_data.selected_index += 1
             elif self.step == 1 or self.step == 2:  # TODO fix movement rules for step 2
                 if event.left:
-                    if client_data.selected_index > 0 and client_data.selected_index != self.hand_size:
+                    if client_data.selected_index > 1 and client_data.selected_index != self.hand_size:
                         client_data.selected_index -= 2
                 elif event.right:
                     if client_data.selected_index < self.hand_size - 2:
@@ -52,7 +70,7 @@ class Golf(Game):
             c = hand[i]
             x = i // 2 * mult + offset
             selected = False
-            if self.turn == p and (self.step == 1 or self.step == 2):
+            if self.turn == p and (self.step == 1 or (self.step == 2 and not c.face_up)):
                 if card_selected(x, y, event.mouse_pos):
                     client_data.selected_index = i
                     selected = True
@@ -158,28 +176,60 @@ class Golf(Game):
             if selected and select_frame:
                 resources.draw_empty_selection(win, x, y)
 
+    def game_over(self, p):
+        for card in self.players[p].hand():
+            if not card.face_up:
+                return False
+        return True
+
+    def score_hands(self, p):
+        points = [0, 0]
+        for i in range(len(points)):
+            hand = self.players[i].hand()
+            for j in range(0, len(hand), 2):
+                if hand[j] == hand[j + 1]:
+                    continue
+                points[i] += CARD_POINTS[hand[j].v] + CARD_POINTS[hand[j + 1].v]
+        return points
+
     def discard_card(self, p, card):
         self.bottom_card = self.top_card
         if card == self.drawn_card:
             self.top_card = self.drawn_card
             self.step = 2
         else:
+            card.face_up = True
             self.top_card = card
-            self.players[p].play_card(card)
-            self.players[p].draw_card(self.drawn_card)
-            # TODO check if game over
+            self.players[p].replace_card(card, self.drawn_card)
+            if self.game_over(p):
+                self.over = True
+                points = self.score_hands(p)
+                if points[p] > points[1 - p]:
+                    self.winner = p
+                elif points[p] < points[1 - p]:
+                    self.winner = 1 - p
+                elif points[p] == points[1 - p]:
+                    self.winner = len(self.players)
             self.step = 0
             self.turn = 1 - p
         self.drawn_card = None
 
     def flip_card(self, p, card):
         self.players[p].flip(card)
+        if self.initial_cards_flipped[p] < 1:
+            self.initial_cards_flipped[p] += 1
+            return
+        if self.initial_cards_flipped[p] < 2:
+            self.initial_cards_flipped[p] += 1
+            if self.initial_cards_flipped[1 - p] < 2:
+                self.turn = 1 - p
+                return
         # TODO check if game over
         self.step = 0
         self.turn = 1 - p
 
     def draw_from_deck(self):
-        self.drawn_card = self.deck.deal_card()
+        self.drawn_card = self.deck.deal_card(face_up=True)
         self.step = 1
 
     def draw_from_discard(self):
