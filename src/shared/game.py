@@ -3,7 +3,6 @@ from .shared_data import CARD_WIDTH, CARD_HEIGHT, OUTLINE, OUTLINE_WIDTH, CENTER
 from .shared_data import WIN_HEIGHT, FONT_FAMILY, FONT_SIZE, ARROW_SIZE, WHITE
 from .deck import Deck
 from .player import Player
-from .button import Button
 
 
 def card_selected(x, y, pos):
@@ -19,21 +18,22 @@ def outline_card(win, x, y, color=OUTLINE):
 
 
 class Game:
-    def __init__(self, hand_size):
+    def __init__(self, hand_size, sort_hand=False):
         self.hand_size = hand_size
         self.deck = Deck()
-        self.players = [Player(self.deck.deal_hand(self.hand_size, False)), Player(self.deck.deal_hand(self.hand_size, False))]
+        self.players = [
+            Player(self.deck.deal_hand(self.hand_size, False), sort_hand=sort_hand),
+            Player(self.deck.deal_hand(self.hand_size, False), sort_hand=sort_hand)
+        ]
         self.turn = 0
         self.winner = -1
-        self.over = self.reset = False
-        self.play_again_button = Button((CENTER[0] - BUTTON_WIDTH // 2, CENTER[1] + 100), "Play Again", self.play_again)
+        self.over = False
 
     def draw(self, win, resources, client_data, p, event, frame_count, network):
         resources.draw_background(win, client_data.settings.background)
 
         if self.over:
             self.draw_winner(win, p)
-            self.play_again_button.draw(win, resources, event)
         else:
             self.draw_pointer(win, resources, p)
 
@@ -54,6 +54,3 @@ class Game:
         rect = text.get_rect()
         rect.center = (CENTER[0], CENTER[1] - 100)
         win.blit(text, rect)
-
-    def play_again(self):
-        self.reset = True

@@ -20,8 +20,8 @@ def waiting(win, x):
 
 
 def game_loop(win, resources, menu, usersettings):
-    n = Network(usersettings.get_game_name())
     client_data = ClientGameData(usersettings)
+    n = Network(client_data)
     clock = pygame.time.Clock()
     frame_count = 0
     while True:
@@ -33,12 +33,12 @@ def game_loop(win, resources, menu, usersettings):
                 n.start_game()
             if event.escape and menu.escape():
                 break
-            if n.game.reset or menu.exit_game:
+            if menu.exit_game:
                 n.close()
                 return menu_loop(win, resources, usersettings)
             if not menu.active:
-                n.update(win, resources, client_data, event, frame_count)
-            menu.draw(win, resources, event, frame_count)
+                n.update(win, resources, event, frame_count)
+            menu.draw(win, resources, event, frame_count, game_over=n.game.over)
         else:
             waiting(win, ((frame_count // BLINK_SPEED) % 4))
         frame_count += 1

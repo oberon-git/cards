@@ -4,7 +4,7 @@ from .game import Game, card_selected, outline_card
 
 class Rummy(Game):
     def __init__(self):
-        super().__init__(7)
+        super().__init__(7, sort_hand=True)
         self.step = 0
         self.top_card = self.deck.deal_card()
         self.bottom_card = None
@@ -39,23 +39,22 @@ class Rummy(Game):
         for i in range(len(hand)):
             c = hand[i]
             x = i * mult + offset
-            selected = False
+            selected = new = False
             if self.turn == p and self.step == 1 and not self.over:
                 if card_selected(x, y, event.mouse_pos):
                     client_data.selected_index = i
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DiscardCommand(p, c))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DiscardCommand(p, c)):
+                            client_data.selected_index = 0
                 elif i == client_data.selected_index:
                     selected = True
                     if event.enter:
-                        network.send_command_to_server(DiscardCommand(p, c))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DiscardCommand(p, c)):
+                            client_data.selected_index = 0
                 elif self.turn == p and self.step == 1 and not self.over and self.new_card_index == i:
-                    if (frame_count // (BLINK_SPEED * 2)) % 2 == 0:
-                        outline_card(win, x, y, BLACK)
-            c.draw(win, resources, x, y, selected=selected and select_frame)
+                    new = True
+            c.draw(win, resources, x, y, selected=selected and select_frame, new=new and select_frame)
 
         # draw the opponents hand
         if self.over:
@@ -82,13 +81,13 @@ class Rummy(Game):
                     client_data.selected_index = 0
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DrawFromDeckCommand(p))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DrawFromDeckCommand(p)):
+                            client_data.selected_index = 0
                 elif client_data.selected_index == 0:
                     selected = True
-                    if event.enter:
-                        network.send_command_to_server(DrawFromDeckCommand(p))
-                        client_data.selected_index = 0
+                    if event.enter and not client_data.command_processing:
+                        if network.send_command_to_server(DrawFromDeckCommand(p)):
+                            client_data.selected_index = 0
             resources.draw_card_back(win, client_data.settings.card_back, x, y, frame_count, selected=selected and select_frame)
         x += mult
         if self.over:
@@ -100,13 +99,13 @@ class Rummy(Game):
                     client_data.selected_index = 1
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DrawFromDiscardCommand(p))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DrawFromDiscardCommand(p)):
+                            client_data.selected_index = 0
                 elif client_data.selected_index == 1:
                     selected = True
                     if event.enter:
-                        network.send_command_to_server(DrawFromDiscardCommand(p))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DrawFromDiscardCommand(p)):
+                            client_data.selected_index = 0
             self.top_card.draw(win, resources, x, y, selected=selected and select_frame)
 
     def draw_card_from_deck(self, p):

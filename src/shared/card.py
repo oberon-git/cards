@@ -9,8 +9,8 @@ class Card:
         self.c = CARD_TYPES[self.v] + CARD_SUITS[self.s]
         self.sort = 1
 
-    def draw(self, win, resources, x, y, selected=False):
-        resources.draw_card(win, self.c, x, y, selected)
+    def draw(self, win, resources, x, y, selected=False, new=False):
+        resources.draw_card(win, self.c, x, y, selected=selected, new=new)
 
     def card(self):
         return self.c

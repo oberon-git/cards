@@ -1,7 +1,9 @@
 class Player:
-    def __init__(self, hand):
+    def __init__(self, hand, sort_hand=False):
         self.h = hand
-        self.h.sort()
+        self.sort_hand = sort_hand
+        if self.sort_hand:
+            self.h.sort()
 
     def play_card(self, card):
         i_to_pop = -1
@@ -15,8 +17,15 @@ class Player:
 
     def draw_card(self, c):
         self.h.append(c)
-        self.h.sort()
+        if self.sort_hand:
+            self.h.sort()
         return self.h.index(c)
+
+    def flip(self, c):
+        for card in self.h:
+            if card == c:
+                card.flip()
+                break
 
     def hand(self):
         return self.h

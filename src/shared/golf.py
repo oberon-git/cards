@@ -1,7 +1,5 @@
-import pygame
 from .shared_data import CARD_WIDTH, CARD_HEIGHT, CENTER, BLINK_SPEED, CARD_SPACING, WIN_WIDTH, WIN_HEIGHT
-from .shared_data import BLACK, WHITE, FONT_SIZE, FONT_FAMILY, ARROW_SIZE
-from .game import Game, card_selected, outline_card
+from .game import Game, card_selected
 
 
 class Golf(Game):
@@ -30,7 +28,7 @@ class Golf(Game):
                 elif event.right:
                     if client_data.selected_index < 1:
                         client_data.selected_index += 1
-            elif self.step == 1:
+            elif self.step == 1 or self.step == 2:  # TODO fix movement rules for step 2
                 if event.left:
                     if client_data.selected_index > 0 and client_data.selected_index != self.hand_size:
                         client_data.selected_index -= 2
@@ -38,7 +36,7 @@ class Golf(Game):
                     if client_data.selected_index < self.hand_size - 2:
                         client_data.selected_index += 2
                 elif event.down:
-                    if client_data.selected_index == self.hand_size:
+                    if self.step == 1 and client_data.selected_index == self.hand_size:
                         client_data.selected_index = 0
                     elif client_data.selected_index % 2 == 0 and client_data.selected_index < self.hand_size:
                         client_data.selected_index += 1
@@ -54,18 +52,26 @@ class Golf(Game):
             c = hand[i]
             x = i // 2 * mult + offset
             selected = False
-            if self.turn == p and self.step == 1:
+            if self.turn == p and (self.step == 1 or self.step == 2):
                 if card_selected(x, y, event.mouse_pos):
                     client_data.selected_index = i
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DiscardCommand(p, c))
-                        client_data.selected_index = 0
+                        if self.step == 1:
+                            if network.send_command_to_server(DiscardCommand(p, c)):
+                                client_data.selected_index = 0
+                        elif self.step == 2:
+                            if network.send_command_to_server(FlipCardCommand(p, c)):
+                                client_data.selected_index = 0
                 elif client_data.selected_index == i:
                     selected = True
                     if event.enter:
-                        network.send_command_to_server(DiscardCommand(p, c))
-                        client_data.selected_index = 0
+                        if self.step == 1:
+                            if network.send_command_to_server(DiscardCommand(p, c)):
+                                client_data.selected_index = 0
+                        elif self.step == 2:
+                            if network.send_command_to_server(FlipCardCommand(p, c)):
+                                client_data.selected_index = 0
             if c.face_up:
                 c.draw(win, resources, x, y, selected=selected and select_frame)
             else:
@@ -73,7 +79,7 @@ class Golf(Game):
 
         # draw opponents hand
         for i in range(len(opponents_hand)):
-            y = 30 if i % 2 == 0 else 30 + CARD_HEIGHT + CARD_SPACING
+            y = 30 if i % 2 == 1 else 30 + CARD_HEIGHT + CARD_SPACING
             c = opponents_hand[i]
             x = i // 2 * mult + offset
             if c.face_up:
@@ -98,13 +104,13 @@ class Golf(Game):
                     client_data.selected_index = 0
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DrawFromDeckCommand(p))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DrawFromDeckCommand(p)):
+                            client_data.selected_index = 0
                 elif client_data.selected_index == 0:
                     selected = True
                     if event.enter:
-                        network.send_command_to_server(DrawFromDeckCommand(p))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DrawFromDeckCommand(p)):
+                            client_data.selected_index = 0
             resources.draw_card_back(win, client_data.settings.card_back, x, y, frame_count, selected=selected and select_frame)
         x += mult
         if self.over:
@@ -116,25 +122,25 @@ class Golf(Game):
                     client_data.selected_index = 1
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DrawFromDiscardCommand(p))
-                        client_data.selected_index = self.hand_size
+                        if network.send_command_to_server(DrawFromDiscardCommand(p)):
+                            client_data.selected_index = self.hand_size
                 elif client_data.selected_index == 1:
                     selected = True
                     if event.enter:
-                        network.send_command_to_server(DrawFromDiscardCommand(p))
-                        client_data.selected_index = self.hand_size
+                        if network.send_command_to_server(DrawFromDiscardCommand(p)):
+                            client_data.selected_index = self.hand_size
             elif self.turn == p and self.step == 1:
                 if card_selected(x, y, event.mouse_pos):
                     client_data.selected_index = self.hand_size
                     selected = True
                     if event.click or event.enter:
-                        network.send_command_to_server(DiscardCommand(self.drawn_card))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DiscardCommand(p, self.drawn_card)):
+                            client_data.selected_index = 0
                 elif client_data.selected_index == self.hand_size:
                     selected = True
                     if event.enter:
-                        network.send_command_to_server(DiscardCommand(self.drawn_card))
-                        client_data.selected_index = 0
+                        if network.send_command_to_server(DiscardCommand(p, self.drawn_card)):
+                            client_data.selected_index = 0
             self.top_card.draw(win, resources, x, y, selected=selected and select_frame)
         elif self.top_card is None and self.turn == p and self.step == 1:
             selected = False
@@ -142,13 +148,13 @@ class Golf(Game):
                 client_data.selected_index = self.hand_size
                 selected = True
                 if event.click or event.enter:
-                    network.send_command_to_server(DiscardCommand(p, self.drawn_card))
-                    client_data.selected_index = 0
+                    if network.send_command_to_server(DiscardCommand(p, self.drawn_card)):
+                        client_data.selected_index = 0
             elif client_data.selected_index == self.hand_size:
                 selected = True
                 if event.enter:
-                    network.send_command_to_server(DiscardCommand(p, self.drawn_card))
-                    client_data.selected_index = 0
+                    if network.send_command_to_server(DiscardCommand(p, self.drawn_card)):
+                        client_data.selected_index = 0
             if selected and select_frame:
                 resources.draw_empty_selection(win, x, y)
 
@@ -158,12 +164,19 @@ class Golf(Game):
             self.top_card = self.drawn_card
             self.step = 2
         else:
+            self.top_card = card
             self.players[p].play_card(card)
             self.players[p].draw_card(self.drawn_card)
             # TODO check if game over
             self.step = 0
             self.turn = 1 - p
         self.drawn_card = None
+
+    def flip_card(self, p, card):
+        self.players[p].flip(card)
+        # TODO check if game over
+        self.step = 0
+        self.turn = 1 - p
 
     def draw_from_deck(self):
         self.drawn_card = self.deck.deal_card()
@@ -182,6 +195,15 @@ class DiscardCommand:
 
     def run(self, game):
         game.discard_card(self.p, self.card)
+
+
+class FlipCardCommand:
+    def __init__(self, p, card):
+        self.p = p
+        self.card = card
+
+    def run(self, game):
+        game.flip_card(self.p, self.card)
 
 
 class DrawFromDiscardCommand:
