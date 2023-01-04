@@ -6,7 +6,6 @@ from .button.button import Button
 from src.shared.shared_data import WIN_WIDTH, WIN_HEIGHT, CENTER, BUTTON_WIDTH, BUTTON_HEIGHT
 from src.shared.shared_data import IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT, BACKGROUND_COUNT
 from src.shared.shared_data import CARD_SPACING, CARD_HEIGHT, CARD_WIDTH, CARD_BACKS
-from src.shared.game import card_selected
 
 
 def get_button_rect(x):

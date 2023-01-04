@@ -1,6 +1,6 @@
 import pygame
 import os
-from src.shared.shared_data import ASSET_DIR, WIN_WIDTH, WIN_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT
+from src.shared.shared_data import ASSET_DIR, WIN_WIDTH, WIN_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT, FONT_SIZE, FONT_FAMILY
 from src.shared.shared_data import CARD_WIDTH, CARD_HEIGHT, CARD_BACKS, IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT
 
 
@@ -50,6 +50,8 @@ class Resources:
         self.new_card_overlay = pygame.transform.scale(self.black_overlay, (CARD_WIDTH, CARD_HEIGHT))
         self.background_overlay = pygame.transform.scale(self.yellow_overlay, (IMAGE_BUTTON_WIDTH, IMAGE_BUTTON_HEIGHT))
         self.button_overlay = pygame.transform.scale(self.yellow_overlay, (BUTTON_WIDTH, BUTTON_HEIGHT))
+
+        self.font = pygame.font.SysFont(FONT_FAMILY, FONT_SIZE)
 
     def draw_card(self, win, key, x, y, selected=False, new=False):
         image = self.cards[key]
@@ -103,5 +105,3 @@ class CardBack:
         else:
             image = self.frames[(frame_count // self.animation_speed) % len(self.frames)]
         win.blit(image, (x, y))
-
-
