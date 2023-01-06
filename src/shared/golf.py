@@ -146,7 +146,7 @@ class Golf(Game):
         if self.turn == p and self.step == 1:
             self.drawn_card.draw(win, resources, x, WIN_HEIGHT - (CARD_HEIGHT * 3/2) - 30 - (CARD_SPACING // 2))
         elif self.turn != p and self.step == 1:
-            resources.draw_card_back(win, client_data.settings.card_back, x, (CARD_HEIGHT * 5/2) + 30 + (CARD_SPACING // 2), frame_count)
+            resources.draw_card_back(win, client_data.settings.card_back, x, (CARD_HEIGHT * 1/2) + 30 + (CARD_SPACING // 2), frame_count)
 
         # draw deck and discard piles
         x = CENTER[0] - CARD_WIDTH // 2 - mult // 2
