@@ -1,9 +1,13 @@
 use std::fmt;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
+use rand::thread_rng;
+use rand::seq::SliceRandom;
 
 pub struct State {
     pub id: i32,
     pub players: (Player, Player),
-    pub deck: Vec<Card>,
+    pub deck: Deck,
 }
 
 pub struct Player {
@@ -12,11 +16,16 @@ pub struct Player {
     pub hand: Vec<Card>,
 }
 
+pub struct Deck {
+    cards: Vec<Card>,
+}
+
 pub struct Card {
     pub suit: CardSuit,
     pub value: CardValue,
 }
 
+#[derive(EnumIter)]
 pub enum CardSuit {
     Clubs,
     Diamonds,
@@ -24,6 +33,7 @@ pub enum CardSuit {
     Spades,
 }
 
+#[derive(EnumIter)]
 pub enum CardValue {
     One,
     Two,
@@ -40,6 +50,53 @@ pub enum CardValue {
     King,
     Ace,
 }
+
+impl State {
+    pub fn new(id: i32) -> Self {
+        let deck = Deck::new();
+
+        let players = (Player::new(1, deck.deal_hand()), Player::new(2, deck.deal_hand()));
+
+        Self { id, players, deck }
+    }
+}
+
+impl Player {
+    pub fn new(id: i32, hand: Vec<Card>) -> Self {
+        let turn = id == 0;
+        
+        Self { id, turn, hand }
+    }
+}
+
+impl Deck {
+    pub fn new() -> Self {
+        let mut cards = Vec::new();
+        for suit in CardSuit::iter() {
+            for value in CardValue::iter() {
+                cards.push(Card::new(suit, value));
+            }
+        }
+
+        cards.shuffle(&mut thread_rng());
+
+        Self { cards }
+    }
+
+    pub fn deal_hand(&self) -> Vec<Card> {
+        let hand = Vec::new();
+        for 0..7 { // a hand is seven cards
+            hand.push(self.cards.pop());
+        }
+
+        hand
+    }
+
+    pub fn deal_card(&self) -> Card {
+        self.cards.pop()
+    }
+}
+
 
 impl fmt::Display for CardSuit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

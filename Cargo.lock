@@ -34,6 +34,9 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
+dependencies = [
+ "strum",
+]
 
 [[package]]
 name = "fs_extra"
@@ -79,3 +82,9 @@ dependencies = [
 [[package]]
 name = "server"
 version = "0.1.0"
+
+[[package]]
+name = "strum"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
