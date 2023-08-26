@@ -1,6 +1,0 @@
-1. Need state, deck, player, hand, card objects
-2. Need algorithm to draw all cards on the window
-3. Need commands to communicate betwen client and server
-4. Need threading
-5. Need to implement game rules
-6. Need main menu
